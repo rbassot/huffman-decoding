@@ -4,5 +4,6 @@
 //main
 int main() {
 
+   printf("Created main function.\n");
    return 0;
 }
