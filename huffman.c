@@ -83,7 +83,7 @@ char* parse_input_file(FILE* fp){
    int bytes = 0;
    wchar_t c;
 
-   while((c = fgetwc(fp)) != 65535){
+   while((c = getwc(fp)) != WEOF){
 
       //byte-swap to little-endian
       c = (c>>8) | (c<<8);
@@ -97,7 +97,7 @@ char* parse_input_file(FILE* fp){
       }
 
       else{
-         printf("%lc\n", c);
+         printf("%x\n", c);
          bytes = bytes + 2;
       }
    }
