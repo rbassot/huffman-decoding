@@ -36,13 +36,8 @@ char* parse_input_file(FILE* fp);
 //main
 int main(int argc, char *argv[]) {
 
-   //set the locale to French for printing accented characters
-   setlocale(LC_CTYPE,"UTF-8");
-
-   //test
-   wchar_t c = 0xC3A9;
-   wprintf(L"%ls\n", c);
-   exit(0);
+   //set the locale to accept UTF-8 characters
+   setlocale(LC_ALL, "");
 
    //check that a file was passed
    if(argc < 2) {
@@ -51,7 +46,7 @@ int main(int argc, char *argv[]) {
    }
 
    //open the file that was passed as argument
-   FILE* fp = fopen(argv[1], "rb, ccs=UTF-8");
+   FILE* fp = fopen(argv[1], "rb");
 
    //check valid file
    if(fp == NULL){
@@ -86,18 +81,14 @@ char* parse_input_file(FILE* fp){
 
    //count the number of bytes that need to be allocated in memory
    int bytes = 0;
-   unsigned char c;
+   wint_t c;
    //printf("è");
    //exit(0);
-   while((c = fgetc(fp)) != EOF){
+   while((c = fgetwc(fp)) != 65535){
 
-      //handle extended ASCII characters
-      if(c >= 128){
-         if(c == 195){
-
-         }
-      }
-      printf("%u\n", c);
+      //byte-swap to little-endian
+      c = (c>>8) | (c<<8);
+      printf("%x\n", c);
       bytes++;
    }
    printf("File size:                %d bytes\n", bytes);
