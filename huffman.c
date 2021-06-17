@@ -81,12 +81,15 @@ char* parse_input_file(FILE* fp){
 
    //count the number of bytes that need to be allocated in memory
    int bytes = 0;
-   wchar_t c;
-   while((c = fgetwc(fp)) != WEOF){
-      wprintf(L"%lc\n", c);
+   unsigned char c;
+   //printf("è");
+   //exit(0);
+   while((c = fgetc(fp)) != EOF){
+      printf("%uc\n", c);
       bytes++;
    }
    printf("File size:                %d bytes\n", bytes);
+   exit(0);
 
    //allocate memory for the file string & read file
    char* file_string = malloc(bytes + 1); //add space for null terminator
