@@ -39,6 +39,11 @@ int main(int argc, char *argv[]) {
    //set the locale to French for printing accented characters
    setlocale(LC_CTYPE,"UTF-8");
 
+   //test
+   wchar_t c = 0xC3A9;
+   wprintf(L"%ls\n", c);
+   exit(0);
+
    //check that a file was passed
    if(argc < 2) {
       printf("There was no file passed as argument to the program.\n");
@@ -85,7 +90,14 @@ char* parse_input_file(FILE* fp){
    //printf("è");
    //exit(0);
    while((c = fgetc(fp)) != EOF){
-      printf("%uc\n", c);
+
+      //handle extended ASCII characters
+      if(c >= 128){
+         if(c == 195){
+
+         }
+      }
+      printf("%u\n", c);
       bytes++;
    }
    printf("File size:                %d bytes\n", bytes);
