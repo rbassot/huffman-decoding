@@ -81,15 +81,25 @@ char* parse_input_file(FILE* fp){
 
    //count the number of bytes that need to be allocated in memory
    int bytes = 0;
-   wint_t c;
-   //printf("è");
-   //exit(0);
+   wchar_t c;
+
    while((c = fgetwc(fp)) != 65535){
 
       //byte-swap to little-endian
       c = (c>>8) | (c<<8);
-      printf("%x\n", c);
-      bytes++;
+
+      //split all 1-byte UTF-8 chars into two separate characters
+      if((c >> 8) != 0xC3){
+         wchar_t c1 = (c >> 8);
+         wchar_t c2 = (c & 0xff);
+         printf("%x and %x\n", c1, c2);
+         bytes = bytes + 2;
+      }
+
+      else{
+         printf("%lc\n", c);
+         bytes = bytes + 2;
+      }
    }
    printf("File size:                %d bytes\n", bytes);
    exit(0);
