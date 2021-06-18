@@ -79,8 +79,8 @@ Function to handle parsing of the input file at the command line.
 */
 char* parse_input_file(FILE* fp){
 
-   //count the number of bytes that need to be allocated in memory
-   int bytes = 0;
+   //count the number of characters that need to be allocated in memory
+   int char_count = 0;
    wchar_t c;
 
    while((c = getwc(fp)) != WEOF){
@@ -93,19 +93,26 @@ char* parse_input_file(FILE* fp){
          wchar_t c1 = (c >> 8);
          wchar_t c2 = (c & 0xff);
          printf("%x and %x\n", c1, c2);
-         bytes = bytes + 2;
+         char_count = char_count + 2;
       }
 
+      else{
+         printf("A character outside 1-byte Unicode was found...");
+      }
+
+      //TODO: Handle French characters represented as 2-byte Unicode
+      /*
       else{
          printf("%x\n", c);
          bytes = bytes + 2;
       }
+      */
    }
    printf("File size:                %d bytes\n", bytes);
    exit(0);
 
    //allocate memory for the file string & read file
-   char* file_string = malloc(bytes + 1); //add space for null terminator
+   wchar_t* file_string = malloc(bytes + 1); //add space for null terminator
    rewind(fp);
    fread(file_string, 1, bytes, fp);
    fclose(fp);
