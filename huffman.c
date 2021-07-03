@@ -5,9 +5,10 @@
 #include <wchar.h>
 #include <locale.h>
 
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+#define NUM_LETTERS 191
 //max height == # of unique letters present in the French alphabet
 #define MAX_TREE_HT 80
-
 
 //-----DATA STRUCTURES-----
 //Huffman tree node
@@ -32,36 +33,64 @@ struct MinHeap{
 void initialize_min_heap(FILE* fp);
 char* parse_input_file(FILE* fp);
 
+void print_array(int* array){
 
-//main
-//takes input file and output file as args
-int main(int argc, char *argv[]) {
+	int i;
+	for(i=0;i<NUM_LETTERS;i++){
+		printf("%d: %d\n", i, array[i]);
+	}
+}
+
+//Function for getting frequency of each letter
+//Takes file input and buffer
+//Return frequency array where each index corresponds to the char->int conversion.
+void get_freq_values(char* filename, int *arr){
 	
+	FILE *fp = fopen(filename, "r");
+	if(fp == NULL) {
+		fprintf(stderr, "File Error: %s does not exist\n", filename);
+		exit(2);
+	}
+	
+	char ch;
+	
+	//if byte begins with "1" (unicode double bytes begin with "110....")
+	//	it is a double byte char
+	//	use the second byte as address
+	//else (it would begin with 0)
+	//	ascii value is the address
+	//Assumptions: 
+	//	no triple or quad byte chars are given
+	//	valid unicode is provided
+	while((ch = fgetc(fp)) != EOF) {
+			
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(fp);
+		}
+		unsigned char unsign_ch = ch;
+		//printf("%d ", unsign_ch);
+		arr[ch] += 1;
+	}
+	fclose(fp);
+}
+
+int main(int argc, char *argv[]) {
+
 	if(argc!=3) {
 		fprintf(stderr, "Argument Error: Expected ./huffman input.txt output.bin\n");
 		return 1;
 	}
-	else {
-		printf("Args supplied: %s, %s\n", argv[1], argv[2]);
-	}
+	
+	int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
+	
+	get_freq_values(argv[1], freq_values);
 
-	FILE *input = fopen(argv[1], "r");
+	//print_array(freq_values);
+	
+	//code to write to file
 	//FILE *output = fopen(argv[2], "w");
-	//currently printing output to terminal for debugging
-	//remove comments for final submission
-	if(input == NULL) {
-		fprintf(stderr, "File Error: %s does not exist\n", argv[1]);
-		return 2;
-	}
-
-	char ch;
-	while((ch = fgetc(input)) != EOF) {
-		printf("%c", ch);
-	}
-
-	fclose(input);
-
-
-
+	
 	return 0;
 }
+
+
