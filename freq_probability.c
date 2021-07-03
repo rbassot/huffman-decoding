@@ -14,7 +14,6 @@ typedef struct Node{
     char letter;     //the letter specified
     unsigned int freq;   //frequency of letter
     struct Node *left, *right;  //the Node's children - maximum 2
-    unsigned int visited;
 }Node;
 
 //Min Heap: Collection of min-heap nodes stored in a tree-like structure.
@@ -42,7 +41,6 @@ struct Node* create_new_node(char letter, unsigned freq){
     node->left = node->right = NULL;
     node->letter = letter;
     node->freq = freq;
-    node->visited = 0;
 
     return node;
 }
