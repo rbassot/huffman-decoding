@@ -14,6 +14,7 @@ typedef struct Node{
     char letter;     //the letter specified
     unsigned int freq;   //frequency of letter
     struct Node *left, *right;  //the Node's children - maximum 2
+    unsigned int visited;
 }Node;
 
 //Min Heap: Collection of min-heap nodes stored in a tree-like structure.
@@ -41,6 +42,7 @@ struct Node* create_new_node(char letter, unsigned freq){
     node->left = node->right = NULL;
     node->letter = letter;
     node->freq = freq;
+    node->visited = 0;
 
     return node;
 }
@@ -174,6 +176,7 @@ struct Node* build_huffman_tree(char letter[], int freq[], int size){
 
     //iterate through each Node in heap & build the Huffman Tree
     while(heap->size > 1){
+        printf("%d\n", heap->size);
 
         //remove the 2 minimum frequency Nodes from the MinHeap list
         left_child = remove_min_node(heap);
@@ -238,18 +241,29 @@ struct Node* pop(struct StackNode** top_ref){
  
   /*If StackNode is empty then error */
   if(is_empty(*top_ref)){
-     printf("Stack Underflow \n");
-     getchar();
-     exit(0);
+    printf("Stack Underflow \n");
+    getchar();
+    exit(0);
   }
 
   else{
-     top = *top_ref;
-     result = top->node;
-     *top_ref = top->next;
-     free(top);
-     return result;
+    top = *top_ref;
+    result = top->node;
+    *top_ref = top->next;
+    free(top);
+    return result;
   }
+}
+
+
+// A utility function to print an array of size n
+void printArr(int arr[], int n)
+{
+    int i;
+    for (i = 0; i < n; ++i)
+        printf("%d", arr[i]);
+ 
+    printf("\n");
 }
 
 
@@ -257,61 +271,30 @@ struct Node* pop(struct StackNode** top_ref){
 *   - Traverses the Tree using an iterative InOrder traversal (without root node)
 *   - code is built left to right, by left shifting the integer
 */
-void get_huffman_codes(struct Node* root, char* codes[]){
+void get_huffman_codes(struct Node* root, int codes[], int top){
 
-    //init current Node & the Stack
-    struct Node* current = root;
-    struct StackNode* stack = NULL;
-    int traversal_completed = 0;
-    int i = 0;      //for dynamic code index
-    int index = 0;  //for output codes list index
-
-    char dynamic_code[ALPHABET_SIZE] = { 0 };
-    char unique_code[ALPHABET_SIZE] = { 0 };
-    
-    while(!traversal_completed){
-
-        //First: left subtree - add 0 to code
-        if(current != NULL){
-            /* place pointer to a Node on the stack before traversing
-            the node's left subtree */
-            push(&stack, current);                                              
-            current = current->left;
-            dynamic_code[i] = '0'; 
-            i++;
-        }
-
-        else{
-            //Second: right subtree - add 1 to code
-            if(!is_empty(stack)){
-                current = pop(&stack);
-                i--;
+    // Assign 0 to left edge and recur
+    if (root->left) {
  
-                /* we have visited the node & its left subtree.
-                Now traverse the right subtree */
-                current = current->right;
-                dynamic_code[i] = '1'; 
-                i++;
-            }
-            else{
-                traversal_completed = 1;
-            }
-        }
-
-        //leaf nodes are assigned code values
-        if(is_leaf_node(current)){
-
-            //get unique code
-            for(int j = 0; j < i; j++){
-                unique_code[j] = dynamic_code[j]; 
-            }
-            unique_code[i] = '\0';
-
-            printf("The letter '%c' was assigned code: %s", current->letter, unique_code);
-            codes[index] = unique_code;
-            index++;
-            unique_code[0] = '\0';
-        }
+        codes[top] = 0;
+        get_huffman_codes(root->left, codes, top + 1);
+    }
+ 
+    // Assign 1 to right edge and recur
+    if (root->right) {
+ 
+        codes[top] = 1;
+        get_huffman_codes(root->right, codes, top + 1);
+    }
+ 
+    // If this is a leaf node, then
+    // it contains one of the input
+    // characters, print the character
+    // and its code from arr[]
+    if (is_leaf_node(root)) {
+ 
+        printf("%c: ", root->letter);
+        printArr(codes, top);
     }
 
     return;
@@ -325,7 +308,9 @@ void Tree_inOrder(Node* n){
     }
 
     Tree_inOrder(n->left);
-    printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+    if(is_leaf_node(n)){
+        printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+    }
     Tree_inOrder(n->right);
 
 } 
@@ -343,10 +328,10 @@ int main(){
     struct Node* tree_root = build_huffman_tree(letter, freq, size);
     Tree_inOrder(tree_root);
 
-    char* codes[6]; //ALPHABET_SIZE
-    get_huffman_codes(tree_root, codes);
+    int codes[6]; //ALPHABET_SIZE
+    get_huffman_codes(tree_root, codes, 0);
 
-
+    //codes currently get printed to console
  
     return 0;
 }
