@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <wchar.h>
-#include <locale.h>
 
 //max height == # of unique letters present in the French alphabet
 #define MAX_TREE_HT 80

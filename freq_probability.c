@@ -3,27 +3,34 @@
 #include <string.h>
 #include <stdint.h>
 
-//max height == # of unique letters present in the French alphabet
-#define MAX_TREE_HT 80
+//Number of unique letters present in the French alphabet == max height of MinHeap
+#define ALPHABET_SIZE 80
 
 
 //-----DATA STRUCTURES-----
 //Huffman tree (MinHeap) node
-struct Node{
+typedef struct Node{
 
     char letter;     //the letter specified
     unsigned int freq;   //frequency of letter
     struct Node *left, *right;  //the Node's children - maximum 2
-};
+}Node;
 
 //Min Heap: Collection of min-heap nodes stored in a tree-like structure.
 //With Min Heap, the parent node always has a lesser value (freq, here) than the children. Root node has lowest value.
-struct MinHeap{
+typedef struct MinHeap{
  
     unsigned int size;     //current size of min heap
     unsigned int capacity; //max capacity of heap
     struct Node** list;  //array (list) of pointers to Nodes
-};
+}MinHeap;
+
+//Stack Node for iterative traversal of MinHeap structure (getting Huffman codes)
+typedef struct StackNode{
+
+  struct Node* node;
+  struct StackNode* next;
+}StackNode;
 
 //Create a new blank Node for the MinHeap
 struct Node* create_new_node(char letter, unsigned freq){
@@ -123,36 +130,223 @@ struct MinHeap* build_min_heap(char letter[], unsigned int freq[], unsigned int 
 }
 
 
-//Insert a Node into the MinHeap
-void insert_node(){
+//Insert a Node into the MinHeap list
+void insert_node(struct Node* node, struct MinHeap* heap){
     
+    int i = heap->size;
+    heap->size++;
+
+    //check each child heap index with its parent heap index to find insertion location
+    while(i && (node->freq < heap->list[(i - 1) / 2]->freq)){
+
+        //swap list items to reorder: list index [i] & its parent at index [(i - 1) / 2]
+        heap->list[i] = heap->list[(i - 1) / 2];
+        i = (i - 1) / 2;
+    }
+
+    //once correct location is found, insert node into correct list index
+    heap->list[i] = node;
 }
 
+
+//Remove the minimum frequency-value Node from the MinHeap list
+struct Node* remove_min_node(struct MinHeap* heap){
+
+    //get minimum frequency Node
+    struct Node* temp = heap->list[0];
+
+    //replace list index 0 with the last element, then heapify again
+    heap->list[0] = heap->list[(heap->size) - 1];
+    heap->size--;
+    iterative_min_heapify(heap, 0);
+ 
+    return temp;
+}
+
+
 //Function that handles building the Huffman tree by storing a traversal
-struct Node* buildHuffmanTree(char letter[], int freq[], int size){
+struct Node* build_huffman_tree(char letter[], int freq[], int size){
 
     struct Node *left_child, *right_child, *internal_node;
 
-    //create the min heap data structure to organize the letters by lowest frequency at root
+    //create the min heap data structure to organize the letters by highest frequency at root (ie. smallest code assigned)
     struct MinHeap* heap = build_min_heap(letter, freq, size);
 
-    //iterate through heap & build the Huffman Tree
+    //iterate through each Node in heap & build the Huffman Tree
     while(heap->size > 1){
 
+        //remove the 2 minimum frequency Nodes from the MinHeap list
+        left_child = remove_min_node(heap);
+        right_child = remove_min_node(heap);
+
+        //create a new internal node on each iteration - placeholder character & sum of children's frequencies
+        internal_node = create_new_node('!', left_child->freq + right_child->freq);
+ 
+        //set internal Node's children
+        internal_node->left = left_child;
+        internal_node->right = right_child;
+ 
+        //insert internal node back into heap
+        insert_node(internal_node, heap);
     }
+
+    //final Node is the internal Node that contains the sum of all frequencies
+    return remove_min_node(heap);
 }
+
+
+//Function to check if a given Node is a leaf node in the heap
+int is_leaf_node(struct Node* node){
+    return (!(node->left) && !(node->right));
+}
+
+
+//Function to push an item to the stack
+void push(struct StackNode** top_ref, struct Node* node){
+
+  //allocate node
+  struct StackNode* new_stack_node = (struct StackNode*) malloc(sizeof(StackNode));
+ 
+  if(new_stack_node == NULL){
+     printf("Stack Overflow! \n");
+     getchar();
+     exit(0);
+  }           
+ 
+  //put in the new Node object which holds data (letter, freq, children)
+  new_stack_node->node = node;
+ 
+  //link the old list off the new Node
+  new_stack_node->next = (*top_ref);  
+ 
+  //move the head to point to the new Node
+  (*top_ref) = new_stack_node;
+}
+
+
+//The function returns true if stack is empty, otherwise false
+int is_empty(struct StackNode *top){
+   return (top == NULL)? 1 : 0;
+}  
+
+ 
+//Function to pop an item from the stack
+struct Node* pop(struct StackNode** top_ref){
+
+  struct Node* result;
+  struct StackNode* top;
+ 
+  /*If StackNode is empty then error */
+  if(is_empty(*top_ref)){
+     printf("Stack Underflow \n");
+     getchar();
+     exit(0);
+  }
+
+  else{
+     top = *top_ref;
+     result = top->node;
+     *top_ref = top->next;
+     free(top);
+     return result;
+  }
+}
+
+
+/*Function to receive a root Node of the Min Heap & output the list of Huffman Codes given to each character
+*   - Traverses the Tree using an iterative InOrder traversal (without root node)
+*   - code is built left to right, by left shifting the integer
+*/
+void get_huffman_codes(struct Node* root, char* codes[]){
+
+    //init current Node & the Stack
+    struct Node* current = root;
+    struct StackNode* stack = NULL;
+    int traversal_completed = 0;
+    int i = 0;      //for dynamic code index
+    int index = 0;  //for output codes list index
+
+    char dynamic_code[ALPHABET_SIZE] = { 0 };
+    char unique_code[ALPHABET_SIZE] = { 0 };
+    
+    while(!traversal_completed){
+
+        //First: left subtree - add 0 to code
+        if(current != NULL){
+            /* place pointer to a Node on the stack before traversing
+            the node's left subtree */
+            push(&stack, current);                                              
+            current = current->left;
+            dynamic_code[i] = '0'; 
+            i++;
+        }
+
+        else{
+            //Second: right subtree - add 1 to code
+            if(!is_empty(stack)){
+                current = pop(&stack);
+                i--;
+ 
+                /* we have visited the node & its left subtree.
+                Now traverse the right subtree */
+                current = current->right;
+                dynamic_code[i] = '1'; 
+                i++;
+            }
+            else{
+                traversal_completed = 1;
+            }
+        }
+
+        //leaf nodes are assigned code values
+        if(is_leaf_node(current)){
+
+            //get unique code
+            for(int j = 0; j < i; j++){
+                unique_code[j] = dynamic_code[j]; 
+            }
+            unique_code[i] = '\0';
+
+            printf("The letter '%c' was assigned code: %s", current->letter, unique_code);
+            codes[index] = unique_code;
+            index++;
+            unique_code[0] = '\0';
+        }
+    }
+
+    return;
+}
+
+//Function to show the Nodes of a tree in InOrder traversal order
+void Tree_inOrder(Node* n){
+
+    if(n==0){
+        return;
+    }
+
+    Tree_inOrder(n->left);
+    printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+    Tree_inOrder(n->right);
+
+} 
 
 
 //Main function to drive the Huffman Tree building
 int main(){
  
-    //a is least probable - f most probable
-    char letter[] = { 'a', 'e', 'i', 'o', 'u', 'y' };
-    int freq[] = { 6, 10, 17, 25, 36, 55 };
+    //a is least probable - y most probable
+    char letter[] = {'a', 'e', 'i', 'o', 'u', 'y'};
+    int freq[] = {6, 10, 17, 25, 36, 55};
     int size = sizeof(letter) / sizeof(letter[0]);
- 
+
     //TODO: call Tree building here
-    struct MinHeapNode* tree_root = buildHuffmanTree(letter, freq, size);
+    struct Node* tree_root = build_huffman_tree(letter, freq, size);
+    Tree_inOrder(tree_root);
+
+    char* codes[6]; //ALPHABET_SIZE
+    get_huffman_codes(tree_root, codes);
+
+
  
     return 0;
 }
