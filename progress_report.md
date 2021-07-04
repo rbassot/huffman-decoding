@@ -33,7 +33,9 @@ Average Codeword Transmission Rate = 2 bits/cycle
 
 
 ## Processor
-
-
+-2kb data memory + heap
+-hardware LUT's
+-16 bit
+-https://global.epson.com/products_and_drivers/semicon/products/micro_controller/16bit/
 ## Questions
 
