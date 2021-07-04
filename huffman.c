@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <wchar.h>
-#include <locale.h>
 
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 #define NUM_LETTERS 191
