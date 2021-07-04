@@ -318,15 +318,15 @@ void Tree_inOrder(Node* n){
 int main(){
  
     //a is least probable - y most probable
-    char letter[] = {'a', 'e', 'i', 'o', 'u', 'y'};
-    int freq[] = {6, 10, 17, 25, 36, 55};
+    char letter[] = {'a', 'b', 'c', 'd', 'e'};
+    int freq[] = {40, 30, 15, 10, 5};
     int size = sizeof(letter) / sizeof(letter[0]);
 
     //TODO: call Tree building here
     struct Node* tree_root = build_huffman_tree(letter, freq, size);
     Tree_inOrder(tree_root);
 
-    int codes[6]; //ALPHABET_SIZE
+    int codes[5]; //ALPHABET_SIZE
     get_huffman_codes(tree_root, codes, 0);
 
     //codes currently get printed to console
