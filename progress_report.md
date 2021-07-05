@@ -32,7 +32,7 @@ Average Codeword Transmission Rate = 2 bits/cycle
 
 
 ## Solution Approach
-This project uses the Basic Latin and Latin-1 Supplement set of Unicode values. The standard ASCII set of characters are stored using a single Unicode byte an all acccented French characters consist of two-byte Unicode values. The array generated uses the ASCII values for non accented characters or the second bytes value for French as the indeces and the value as the frequency (e.g 'é' has the value hex-C3A9, which places it at the index hex-A9 or decimal-169). This gives us O(n) efficicency for generating the array and O(1) for access time.
+This project uses the Basic Latin and Latin-1 Supplement set of Unicode values. The standard ASCII set of characters are stored using a single Unicode byte and all acccented French characters consist of two-byte Unicode values. The array generated uses the ASCII values for non accented characters or the second bytes value for French as the indeces and the value as the frequency (e.g 'é' has the value hex-C3A9, which places it at the index hex-A9 or decimal-169). This gives us O(n) efficicency for generating the array and O(1) for access time.
 #### Example
 The string 'AAAB' would give us the array with value 3 at index 65 and 1 at index 66.
 | **Index** | 0...64 | 65 | 66 | 67..191 |
