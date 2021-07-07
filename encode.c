@@ -9,6 +9,7 @@
 
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos))) //Baby function to check if a bit in a position is set
 #define NUM_LETTERS 191
+#define MAX_CODE_LEN 112 //Longest code I saw was 109 digits long, slightly less than 14 bytes
 
 //-----DATA STRUCTURES-----
 //Huffman tree (MinHeap) node
@@ -184,7 +185,7 @@ struct Node* build_huffman_tree(char letter[], int freq[], int size){
 
     //iterate through each Node in heap & build the Huffman Tree
     while(heap->size > 1){
-        printf("%d\n", heap->size);
+        //printf("%d\n", heap->size);
 
         //remove the 2 minimum frequency Nodes from the MinHeap list
         left_child = remove_min_node(heap);
@@ -269,7 +270,7 @@ void print_array(int arr[], int n)
 {
     int i;
     for (i = 0; i < n; ++i)
-        printf("%d, ", arr[i]);
+        printf("%d", arr[i]);
  
     printf("\n");
 }
@@ -311,20 +312,20 @@ void get_freq_values(char* filename, int *arr){
 *   - Traverses the Tree using an iterative InOrder traversal (without root node)
 *   - code is built left to right, by left shifting the integer
 */
-void get_huffman_codes(struct Node* root, int codes[], int top/*, struct Letter* frequencies*/){
+void get_huffman_codes(struct Node* root, int code[], int top, int char_to_code[][MAX_CODE_LEN]){
 
     // Assign 0 to left edge and recur
     if (root->left) {
  
-        codes[top] = 0;
-        get_huffman_codes(root->left, codes, top + 1);
+        code[top] = 0;
+        get_huffman_codes(root->left, code, top + 1, char_to_code);
     }
  
     // Assign 1 to right edge and recur
     if (root->right) {
  
-        codes[top] = 1;
-        get_huffman_codes(root->right, codes, top + 1);
+        code[top] = 1;
+        get_huffman_codes(root->right, code, top + 1, char_to_code);
     }
  
     // If this is a leaf node, then
@@ -332,9 +333,16 @@ void get_huffman_codes(struct Node* root, int codes[], int top/*, struct Letter*
     // characters, print the character
     // and its code from arr[]
     if (is_leaf_node(root)) {
- 
-        printf("%c: ", root->letter);
-        print_array(codes, top);
+	//insert code in array at index root->letter
+	int i;
+	for(i=0;i<top;i++){
+		char_to_code[root->letter][i] = code[i];
+	}
+	for(i=top;i<MAX_CODE_LEN;i++){
+		char_to_code[root->letter][i] = NULL;
+	}
+        //printf("%c: ", root->letter);
+        //print_array(code, top);
     }
 
     return;
@@ -349,7 +357,7 @@ void Tree_inOrder(Node* n){
 
     Tree_inOrder(n->left);
     if(is_leaf_node(n)){
-        printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+	//printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
     }
     Tree_inOrder(n->right);
 
@@ -370,27 +378,27 @@ int main(int argc, char *argv[]) {
     //print_array(freq_values, NUM_LETTERS);
 
     //a is least probable - y most probable
-    unsigned char letter[NUM_LETTERS] = {0}; // = {'a', 'b', 'c', 'd', 'e'};
-    unsigned int freq[NUM_LETTERS] = {0}; // = {40, 30, 15, 10, 5};
+    unsigned char letter[NUM_LETTERS] = {0}; //array where index=value for all i
     int i;
     for(i=0;i<NUM_LETTERS;i++){
-	    printf("I: %d, V: %d\n", i, freq_values[i]);
-	    if(freq_values[i]>0){
-	    	freq[i]=freq_values[i];
-	    	letter[i]=i;
-		//printf("Letter %d Freq %d\n",letter[i],freq[i]);
-	    }
+	    letter[i]=i;
     }
-    //print_array(freq, NUM_LETTERS);
-    //print_array(letter, NUM_LETTERS); 
 
     //TODO: call Tree building here
-    //struct Node* tree_root = build_huffman_tree(letter, freq, NUM_LETTERS);
-    //Tree_inOrder(tree_root);
+    struct Node* tree_root = build_huffman_tree(letter, freq_values, NUM_LETTERS);
+    Tree_inOrder(tree_root);
 
-    //int codes[NUM_LETTERS];
-    //get_huffman_codes(tree_root, codes, 0);
+    int code[MAX_CODE_LEN];
+    int char_to_code[NUM_LETTERS][MAX_CODE_LEN];
+    get_huffman_codes(tree_root, code, 0, char_to_code);
 
+    for(i=0;i<NUM_LETTERS;i++){
+	    int j;
+	    for(j=0;j<MAX_CODE_LEN;j++){
+		    printf("%d", char_to_code[i][j]);
+	    }
+	    printf("\n");
+    }
     //codes currently get printed to console
 
     //FILE *output = fopen(argv[2], "w");
