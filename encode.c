@@ -4,8 +4,11 @@
 #include <stdint.h>
 
 //Number of unique letters present in the French alphabet == max height of MinHeap
-#define ALPHABET_SIZE 80
 
+//#define ALPHABET_SIZE 80 i dont think this is used
+
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos))) //Baby function to check if a bit in a position is set
+#define NUM_LETTERS 191
 
 //-----DATA STRUCTURES-----
 //Huffman tree (MinHeap) node
@@ -31,6 +34,13 @@ typedef struct StackNode{
   struct Node* node;
   struct StackNode* next;
 }StackNode;
+
+//Letter struct to return from get_huffman_codes
+typedef struct Letter{
+
+  unsigned char ch;
+  unsigned int freq;
+}Letter;
 
 //Create a new blank Node for the MinHeap
 struct Node* create_new_node(char letter, unsigned freq){
@@ -255,7 +265,7 @@ struct Node* pop(struct StackNode** top_ref){
 
 
 // A utility function to print an array of size n
-void printArr(int arr[], int n)
+void print_array(int arr[], int n)
 {
     int i;
     for (i = 0; i < n; ++i)
@@ -264,12 +274,44 @@ void printArr(int arr[], int n)
     printf("\n");
 }
 
+//Function for getting frequency of each letter
+//Takes file input and buffer
+//Return frequency array where each index corresponds to the char->int conversion.
+void get_freq_values(char* filename, int *arr){
+	
+	FILE *fp = fopen(filename, "r");
+	if(fp == NULL) {
+		fprintf(stderr, "File Error: %s does not exist\n", filename);
+		exit(2);
+	}
+	
+	char ch;
+	
+	//if byte begins with "1" (unicode double bytes begin with "110....")
+	//	it is a double byte char
+	//	use the second byte as address
+	//else (it would begin with 0)
+	//	ascii value is the address
+	//Assumptions: 
+	//	no triple or quad byte chars are given
+	//	valid unicode is provided
+	while((ch = fgetc(fp)) != EOF) {
+			
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(fp);
+		}
+		unsigned char unsign_ch = ch;
+		//printf("%d ", unsign_ch);
+		arr[ch] += 1;
+	}
+	fclose(fp);
+}
 
 /*Function to receive a root Node of the Min Heap & output the list of Huffman Codes given to each character
 *   - Traverses the Tree using an iterative InOrder traversal (without root node)
 *   - code is built left to right, by left shifting the integer
 */
-void get_huffman_codes(struct Node* root, int codes[], int top){
+void get_huffman_codes(struct Node* root, int codes[], int top/*, struct Letter* frequencies*/){
 
     // Assign 0 to left edge and recur
     if (root->left) {
@@ -292,7 +334,7 @@ void get_huffman_codes(struct Node* root, int codes[], int top){
     if (is_leaf_node(root)) {
  
         printf("%c: ", root->letter);
-        printArr(codes, top);
+        print_array(codes, top);
     }
 
     return;
@@ -315,8 +357,21 @@ void Tree_inOrder(Node* n){
 
 
 //Main function to drive the Huffman Tree building
-int main(){
- 
+int main(int argc, char *argv[]) {
+
+    if(argc!=3) {
+        fprintf(stderr, "Argument Error: Expected ./huffman input.txt output.bin\n");
+	    return 1;
+    }
+
+    int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
+
+    get_freq_values(argv[1], freq_values);
+    //print_array(freq_values);
+
+    //code to write to file
+    //FILE *output = fopen(argv[2], "w");
+
     //a is least probable - y most probable
     char letter[] = {'a', 'b', 'c', 'd', 'e'};
     int freq[] = {40, 30, 15, 10, 5};
@@ -330,7 +385,7 @@ int main(){
     get_huffman_codes(tree_root, codes, 0);
 
     //codes currently get printed to console
- 
+
     return 0;
 }
 
