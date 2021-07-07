@@ -269,7 +269,7 @@ void print_array(int arr[], int n)
 {
     int i;
     for (i = 0; i < n; ++i)
-        printf("%d", arr[i]);
+        printf("%d, ", arr[i]);
  
     printf("\n");
 }
@@ -367,24 +367,33 @@ int main(int argc, char *argv[]) {
     int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
 
     get_freq_values(argv[1], freq_values);
-    //print_array(freq_values);
-
-    //code to write to file
-    //FILE *output = fopen(argv[2], "w");
+    //print_array(freq_values, NUM_LETTERS);
 
     //a is least probable - y most probable
-    char letter[] = {'a', 'b', 'c', 'd', 'e'};
-    int freq[] = {40, 30, 15, 10, 5};
-    int size = sizeof(letter) / sizeof(letter[0]);
+    unsigned char letter[NUM_LETTERS] = {0}; // = {'a', 'b', 'c', 'd', 'e'};
+    unsigned int freq[NUM_LETTERS] = {0}; // = {40, 30, 15, 10, 5};
+    int i;
+    for(i=0;i<NUM_LETTERS;i++){
+	    printf("I: %d, V: %d\n", i, freq_values[i]);
+	    if(freq_values[i]>0){
+	    	freq[i]=freq_values[i];
+	    	letter[i]=i;
+		//printf("Letter %d Freq %d\n",letter[i],freq[i]);
+	    }
+    }
+    //print_array(freq, NUM_LETTERS);
+    //print_array(letter, NUM_LETTERS); 
 
     //TODO: call Tree building here
-    struct Node* tree_root = build_huffman_tree(letter, freq, size);
-    Tree_inOrder(tree_root);
+    //struct Node* tree_root = build_huffman_tree(letter, freq, NUM_LETTERS);
+    //Tree_inOrder(tree_root);
 
-    int codes[5]; //ALPHABET_SIZE
-    get_huffman_codes(tree_root, codes, 0);
+    //int codes[NUM_LETTERS];
+    //get_huffman_codes(tree_root, codes, 0);
 
     //codes currently get printed to console
+
+    //FILE *output = fopen(argv[2], "w");
 
     return 0;
 }
