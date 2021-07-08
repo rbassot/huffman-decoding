@@ -275,6 +275,18 @@ void print_array(int arr[], int n)
     printf("\n");
 }
 
+// Taken from https://stackoverflow.com/questions/62361489/convert-int-array-to-string-using-c
+// Not really sure how the sprintf statement works tbh
+char* int_array_to_string(int array[],int n) {
+    int i;
+    char* output = (char*)malloc(128);
+    char* point = output;
+    for(i = 0; i != n;++i)
+       point +=  sprintf(point,i+1!=n?"%d":"%d",array[i]);
+
+    return output;
+}
+
 //Function for getting frequency of each letter
 //Takes file input and buffer
 //Return frequency array where each index corresponds to the char->int conversion.
@@ -312,7 +324,7 @@ void get_freq_values(char* filename, int *arr){
 *   - Traverses the Tree using an iterative InOrder traversal (without root node)
 *   - code is built left to right, by left shifting the integer
 */
-void get_huffman_codes(struct Node* root, int code[], int top, int char_to_code[][MAX_CODE_LEN]){
+void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_code[]){
 
     // Assign 0 to left edge and recur
     if (root->left) {
@@ -333,16 +345,14 @@ void get_huffman_codes(struct Node* root, int code[], int top, int char_to_code[
     // characters, print the character
     // and its code from arr[]
     if (is_leaf_node(root)) {
+	//convert code int array to string
 	//insert code in array at index root->letter
-	int i;
-	for(i=0;i<top;i++){
-		char_to_code[root->letter][i] = code[i];
-	}
-	for(i=top;i<MAX_CODE_LEN;i++){
-		char_to_code[root->letter][i] = NULL;
-	}
-        //printf("%c: ", root->letter);
+	//printf("%s\n", int_array_to_string(code, top));
+	char* string = int_array_to_string(code, top);
+  	char_to_code[root->letter]=string;
+
         //print_array(code, top);
+        //printf("%c: ", root->letter);
     }
 
     return;
@@ -373,11 +383,8 @@ int main(int argc, char *argv[]) {
     }
 
     int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
-
     get_freq_values(argv[1], freq_values);
-    //print_array(freq_values, NUM_LETTERS);
 
-    //a is least probable - y most probable
     unsigned char letter[NUM_LETTERS] = {0}; //array where index=value for all i
     int i;
     for(i=0;i<NUM_LETTERS;i++){
@@ -389,19 +396,14 @@ int main(int argc, char *argv[]) {
     Tree_inOrder(tree_root);
 
     int code[MAX_CODE_LEN];
-    int char_to_code[NUM_LETTERS][MAX_CODE_LEN];
+    char *char_to_code[NUM_LETTERS];
     get_huffman_codes(tree_root, code, 0, char_to_code);
 
-    for(i=0;i<NUM_LETTERS;i++){
-	    int j;
-	    for(j=0;j<MAX_CODE_LEN;j++){
-		    printf("%d", char_to_code[i][j]);
-	    }
-	    printf("\n");
-    }
-    //codes currently get printed to console
-
     //FILE *output = fopen(argv[2], "w");
+
+    for(i=0;i<NUM_LETTERS;i++){
+    	printf("%s\n", char_to_code[i]);
+    }
 
     return 0;
 }
