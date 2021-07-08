@@ -315,7 +315,7 @@ void get_freq_values(char* filename, int *arr){
 			ch = fgetc(fp);
 		}
 		unsigned char unsign_ch = ch;
-		arr[ch] += 1;
+		arr[unsign_ch] += 1;
 	}
 	fclose(fp);
 }
@@ -348,10 +348,12 @@ void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_cod
 	//convert code int array to string
 	//insert code in array at index root->letter
 
-	print_array(code, top);
-        printf("%c: ", root->letter);
 
-	int index = root->letter;
+	unsigned char index = root->letter;
+
+        //printf("%c: ", index);
+	//print_array(code, top);
+
 	//assigning any value to this array will modify the code array, i dont know why
   	char_to_code[index]= int_array_to_string(code,top);
 
@@ -375,7 +377,59 @@ void Tree_inOrder(Node* n){
 
 } 
 
+//Function to Huffman encode file and output it to a binary file, given the code translations
+void encode_file(char* in_file, char* out_file, char *char_to_code[]){
 
+	FILE *in_fp = fopen(in_file, "r");
+	if(in_fp == NULL) {
+		fprintf(stderr, "File Error: %s does not exist\n", in_file);
+		exit(2);
+	}
+	
+	char ch;
+	
+	//TODO, make this dynamic allocation
+	char binary_string[2000];
+	binary_string[0]='\0';
+
+
+	while((ch = fgetc(in_fp)) != EOF){
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(in_fp);
+		}
+		unsigned char unsign_ch = ch;
+		char *code = char_to_code[unsign_ch];
+		strncat(binary_string, code, strlen(code));	
+
+	}
+	//printf("%s\n", binary_string);
+	
+	fclose(in_fp);
+        
+	FILE *out_fp = fopen(out_file, "wb");
+	if(out_fp == NULL) {
+		fprintf(stderr, "File Error: Could not open %s\n", out_file);
+		exit(2);
+	}
+	
+	//Convert each 8 bits to byte
+	int i=0;
+	int byte;
+	char *ptr; //I don't know why i need this for strol
+	char substring[8];
+	substring[0] = '\0';
+
+//	for(i=0;i<strlen(binary_string);i+=8){
+		strncpy(substring,&binary_string[i], 7);
+		//printf("%s\n", binary_string);
+		printf("%s\n", substring);
+		byte = strtol(substring, &ptr, 2);
+		//printf("%x ",byte);
+		fputc(byte, out_fp);
+//	}
+	fclose(out_fp);
+
+}
 //Main function to drive the Huffman Tree building
 int main(int argc, char *argv[]) {
 
@@ -401,12 +455,8 @@ int main(int argc, char *argv[]) {
     char *char_to_code[NUM_LETTERS];
     get_huffman_codes(tree_root, code, 0, char_to_code);
 
-    //FILE *output = fopen(argv[2], "w");
 
-    //for(i=0;i<NUM_LETTERS;i++){
-    	//printf("%s\n", char_to_code[i]);
-    //}
+    encode_file(argv[1], argv[2], char_to_code);
 
     return 0;
 }
-
