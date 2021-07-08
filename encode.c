@@ -278,6 +278,7 @@ void print_array(int arr[], int n)
 // Taken from https://stackoverflow.com/questions/62361489/convert-int-array-to-string-using-c
 // Not really sure how the sprintf statement works tbh
 char* int_array_to_string(int array[],int n) {
+
     int i;
     char* output = (char*)malloc(128);
     char* point = output;
@@ -314,7 +315,6 @@ void get_freq_values(char* filename, int *arr){
 			ch = fgetc(fp);
 		}
 		unsigned char unsign_ch = ch;
-		//printf("%d ", unsign_ch);
 		arr[ch] += 1;
 	}
 	fclose(fp);
@@ -347,12 +347,14 @@ void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_cod
     if (is_leaf_node(root)) {
 	//convert code int array to string
 	//insert code in array at index root->letter
-	//printf("%s\n", int_array_to_string(code, top));
-	char* string = int_array_to_string(code, top);
-  	char_to_code[root->letter]=string;
 
-        //print_array(code, top);
-        //printf("%c: ", root->letter);
+	print_array(code, top);
+        printf("%c: ", root->letter);
+
+	int index = root->letter;
+	//assigning any value to this array will modify the code array, i dont know why
+  	char_to_code[index]= int_array_to_string(code,top);
+
     }
 
     return;
@@ -401,9 +403,9 @@ int main(int argc, char *argv[]) {
 
     //FILE *output = fopen(argv[2], "w");
 
-    for(i=0;i<NUM_LETTERS;i++){
-    	printf("%s\n", char_to_code[i]);
-    }
+    //for(i=0;i<NUM_LETTERS;i++){
+    	//printf("%s\n", char_to_code[i]);
+    //}
 
     return 0;
 }
