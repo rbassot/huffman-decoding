@@ -8,7 +8,7 @@
 //#define ALPHABET_SIZE 80 i dont think this is used
 
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos))) //Baby function to check if a bit in a position is set
-#define NUM_LETTERS 191
+#define NUM_LETTERS 64 //(191-128)+1 for padding
 #define MAX_CODE_LEN 112 //Longest code I saw was 109 digits long, slightly less than 14 bytes
 
 //-----DATA STRUCTURES-----
@@ -292,7 +292,7 @@ char* int_array_to_string(int array[],int n) {
 //Takes file input and buffer
 //Return frequency array where each index corresponds to the char->int conversion.
 void get_freq_values(char* filename, int *arr){
-	
+
 	FILE *fp = fopen(filename, "r");
 	if(fp == NULL) {
 		fprintf(stderr, "File Error: %s does not exist\n", filename);
@@ -300,7 +300,8 @@ void get_freq_values(char* filename, int *arr){
 	}
 	
 	char ch;
-	
+	unsigned char unsign_ch = ch - 128;
+		
 	//if byte begins with "1" (unicode double bytes begin with "110....")
 	//	it is a double byte char
 	//	use the second byte as address
@@ -310,11 +311,16 @@ void get_freq_values(char* filename, int *arr){
 	//	no triple or quad byte chars are given
 	//	valid unicode is provided
 	while((ch = fgetc(fp)) != EOF) {
-			
+
 		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
 			ch = fgetc(fp);
 		}
-		unsigned char unsign_ch = ch;
+		unsign_ch = ch;
+		if(unsign_ch < 127 && unsign_ch!=10){
+			fprintf(stderr, "ASCII value %d passed. Don't pass any newlines, whitespace, a-zA-Z0-9 etc...", unsign_ch);
+			exit(1);
+		}
+		unsign_ch = ch - 128;
 		arr[unsign_ch] += 1;
 	}
 	fclose(fp);
@@ -345,18 +351,11 @@ void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_cod
     // characters, print the character
     // and its code from arr[]
     if (is_leaf_node(root)) {
-	//convert code int array to string
-	//insert code in array at index root->letter
-
-
-	unsigned char index = root->letter;
-
         //printf("%c: ", index);
 	//print_array(code, top);
-
-	//assigning any value to this array will modify the code array, i dont know why
+	
+	unsigned char index = root->letter;
   	char_to_code[index]= int_array_to_string(code,top);
-
     }
 
     return;
@@ -375,7 +374,23 @@ void Tree_inOrder(Node* n){
     }
     Tree_inOrder(n->right);
 
-} 
+}
+
+void generate_LUT(char* lut_file, char *char_to_code[]){
+
+	FILE *lut_fp = fopen(lut_file, "wb");
+	if(lut_fp == NULL) {
+		fprintf(stderr, "File Error: Could not open %s\n", lut_file);
+		exit(2);
+	}
+	int i;
+	for(i=0;i<NUM_LETTERS;i++){
+		//for each non empty array index -> print to file
+		if(char_to_code[i][0] != '\0'){
+			fprintf(lut_fp, "%d, %s\n", i+128, char_to_code[i]); 
+		}
+	}
+}
 
 //Function to Huffman encode file and output it to a binary file, given the code translations
 void encode_file(char* in_file, char* out_file, char *char_to_code[]){
@@ -386,60 +401,74 @@ void encode_file(char* in_file, char* out_file, char *char_to_code[]){
 		exit(2);
 	}
 	
-	char ch;
-	
-	//TODO, make this dynamic allocation
-	char binary_string[2000];
-	binary_string[0]='\0';
-
-
-	while((ch = fgetc(in_fp)) != EOF){
-		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
-			ch = fgetc(in_fp);
-		}
-		unsigned char unsign_ch = ch;
-		char *code = char_to_code[unsign_ch];
-		strncat(binary_string, code, strlen(code));	
-
-	}
-	//printf("%s\n", binary_string);
-	
-	fclose(in_fp);
-        
 	FILE *out_fp = fopen(out_file, "wb");
 	if(out_fp == NULL) {
 		fprintf(stderr, "File Error: Could not open %s\n", out_file);
 		exit(2);
 	}
+
+	char ch;
+	
+	while((ch = fgetc(in_fp)) != EOF){
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(in_fp);
+		}
+		unsigned char unsign_ch = ch-128;
+		char *code = char_to_code[unsign_ch];
+		fputs(code, out_fp);
+	}
+	
+	fclose(in_fp);
+        
 	
 	//Convert each 8 bits to byte
+	//This is not necesssary as we only want the bits represented as chars
+
+/*	char binary_string[2000];
+	binary_string[0]='\0';
 	int i=0;
 	int byte;
 	char *ptr; //I don't know why i need this for strol
 	char substring[8];
 	substring[0] = '\0';
 
-//	for(i=0;i<strlen(binary_string);i+=8){
+	for(i=0;i<strlen(binary_string);i+=8){
 		strncpy(substring,&binary_string[i], 7);
 		//printf("%s\n", binary_string);
 		printf("%s\n", substring);
 		byte = strtol(substring, &ptr, 2);
 		//printf("%x ",byte);
 		fputc(byte, out_fp);
-//	}
+	}
+*/
+
 	fclose(out_fp);
 
 }
 //Main function to drive the Huffman Tree building
+//Takes input.txt and generates input.txt.huf and input.txt.lut
 int main(int argc, char *argv[]) {
 
-    if(argc!=3) {
-        fprintf(stderr, "Argument Error: Expected ./huffman input.txt output.bin\n");
+    if(argc!=2) {
+        fprintf(stderr, "Argument Error: Expected ./encode input.txt\n");
 	    return 1;
     }
 
+    //Adding .huf and .lut extensions
+    //****** -> I hate working with strings in C <- ******
+    int f_len = strlen(argv[1]);
+    char *in_file, out_file[f_len+4], lut_file[f_len+4];
+    in_file = argv[1];
+    strncpy(out_file, argv[1], f_len);
+    strncpy(lut_file, argv[1], f_len);
+    out_file[f_len] = '\0';
+    lut_file[f_len] = '\0';
+    strncat(out_file, ".huf", 4);
+    strncat(lut_file, ".lut", 4);
+
     int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
-    get_freq_values(argv[1], freq_values);
+
+    get_freq_values(in_file, freq_values);
 
     unsigned char letter[NUM_LETTERS] = {0}; //array where index=value for all i
     int i;
@@ -455,8 +484,9 @@ int main(int argc, char *argv[]) {
     char *char_to_code[NUM_LETTERS];
     get_huffman_codes(tree_root, code, 0, char_to_code);
 
+    generate_LUT(lut_file, char_to_code);
 
-    encode_file(argv[1], argv[2], char_to_code);
+    encode_file(in_file, out_file, char_to_code);
 
     return 0;
 }
