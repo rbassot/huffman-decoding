@@ -4,8 +4,12 @@
 #include <stdint.h>
 
 //Number of unique letters present in the French alphabet == max height of MinHeap
-#define ALPHABET_SIZE 80
 
+//#define ALPHABET_SIZE 80 i dont think this is used
+
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos))) //Baby function to check if a bit in a position is set
+#define NUM_LETTERS 64 //(191-128)+1 for padding
+#define MAX_CODE_LEN 112 //Longest code I saw was 109 digits long, slightly less than 14 bytes
 
 //-----DATA STRUCTURES-----
 //Huffman tree (MinHeap) node
@@ -31,6 +35,13 @@ typedef struct StackNode{
   struct Node* node;
   struct StackNode* next;
 }StackNode;
+
+//Letter struct to return from get_huffman_codes
+typedef struct Letter{
+
+  unsigned char ch;
+  unsigned int freq;
+}Letter;
 
 //Create a new blank Node for the MinHeap
 struct Node* create_new_node(char letter, unsigned freq){
@@ -174,7 +185,7 @@ struct Node* build_huffman_tree(char letter[], int freq[], int size){
 
     //iterate through each Node in heap & build the Huffman Tree
     while(heap->size > 1){
-        printf("%d\n", heap->size);
+        //printf("%d\n", heap->size);
 
         //remove the 2 minimum frequency Nodes from the MinHeap list
         left_child = remove_min_node(heap);
@@ -255,7 +266,7 @@ struct Node* pop(struct StackNode** top_ref){
 
 
 // A utility function to print an array of size n
-void printArr(int arr[], int n)
+void print_array(int arr[], int n)
 {
     int i;
     for (i = 0; i < n; ++i)
@@ -264,25 +275,75 @@ void printArr(int arr[], int n)
     printf("\n");
 }
 
+// Taken from https://stackoverflow.com/questions/62361489/convert-int-array-to-string-using-c
+// Not really sure how the sprintf statement works tbh
+char* int_array_to_string(int array[],int n) {
+
+    int i;
+    char* output = (char*)malloc(128);
+    char* point = output;
+    for(i = 0; i != n;++i)
+       point +=  sprintf(point,i+1!=n?"%d":"%d",array[i]);
+
+    return output;
+}
+
+//Function for getting frequency of each letter
+//Takes file input and buffer
+//Return frequency array where each index corresponds to the char->int conversion.
+void get_freq_values(char* filename, int *arr){
+
+	FILE *fp = fopen(filename, "r");
+	if(fp == NULL) {
+		fprintf(stderr, "File Error: %s does not exist\n", filename);
+		exit(2);
+	}
+	
+	char ch;
+	unsigned char unsign_ch = ch - 128;
+		
+	//if byte begins with "1" (unicode double bytes begin with "110....")
+	//	it is a double byte char
+	//	use the second byte as address
+	//else (it would begin with 0)
+	//	ascii value is the address
+	//Assumptions: 
+	//	no triple or quad byte chars are given
+	//	valid unicode is provided
+	while((ch = fgetc(fp)) != EOF) {
+
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(fp);
+		}
+		unsign_ch = ch;
+		if(unsign_ch < 127 && unsign_ch!=10){
+			fprintf(stderr, "ASCII value %d passed. Don't pass any newlines, whitespace, a-zA-Z0-9 etc...", unsign_ch);
+			exit(1);
+		}
+		unsign_ch = ch - 128;
+		arr[unsign_ch] += 1;
+	}
+	fclose(fp);
+}
 
 /*Function to receive a root Node of the Min Heap & output the list of Huffman Codes given to each character
 *   - Traverses the Tree using an iterative InOrder traversal (without root node)
 *   - code is built left to right, by left shifting the integer
 */
-void get_huffman_codes(struct Node* root, int codes[], int top){
+void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_code[]){
 
     // Assign 0 to left edge and recur
     if (root->left) {
  
-        codes[top] = 0;
-        get_huffman_codes(root->left, codes, top + 1);
+        code[top] = 0;
+        get_huffman_codes(root->left, code, top + 1, char_to_code);
     }
  
     // Assign 1 to right edge and recur
     if (root->right) {
  
-        codes[top] = 1;
-        get_huffman_codes(root->right, codes, top + 1);
+        code[top] = 1;
+        get_huffman_codes(root->right, code, top + 1, char_to_code);
     }
  
     // If this is a leaf node, then
@@ -290,9 +351,11 @@ void get_huffman_codes(struct Node* root, int codes[], int top){
     // characters, print the character
     // and its code from arr[]
     if (is_leaf_node(root)) {
- 
-        printf("%c: ", root->letter);
-        printArr(codes, top);
+        //printf("%c: ", index);
+	//print_array(code, top);
+	
+	unsigned char index = root->letter;
+  	char_to_code[index]= int_array_to_string(code,top);
     }
 
     return;
@@ -307,30 +370,123 @@ void Tree_inOrder(Node* n){
 
     Tree_inOrder(n->left);
     if(is_leaf_node(n)){
-        printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+	//printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
     }
     Tree_inOrder(n->right);
 
-} 
-
-
-//Main function to drive the Huffman Tree building
-int main(){
- 
-    //a is least probable - y most probable
-    char letter[] = {'a', 'b', 'c', 'd', 'e'};
-    int freq[] = {40, 30, 15, 10, 5};
-    int size = sizeof(letter) / sizeof(letter[0]);
-
-    //TODO: call Tree building here
-    struct Node* tree_root = build_huffman_tree(letter, freq, size);
-    Tree_inOrder(tree_root);
-
-    int codes[5]; //ALPHABET_SIZE
-    get_huffman_codes(tree_root, codes, 0);
-
-    //codes currently get printed to console
- 
-    return 0;
 }
 
+void generate_LUT(char* lut_file, char *char_to_code[]){
+
+	FILE *lut_fp = fopen(lut_file, "wb");
+	if(lut_fp == NULL) {
+		fprintf(stderr, "File Error: Could not open %s\n", lut_file);
+		exit(2);
+	}
+	int i;
+	for(i=0;i<NUM_LETTERS;i++){
+		//for each non empty array index -> print to file
+		if(char_to_code[i][0] != '\0'){
+			fprintf(lut_fp, "%d, %s\n", i+128, char_to_code[i]); 
+		}
+	}
+}
+
+//Function to Huffman encode file and output it to a binary file, given the code translations
+void encode_file(char* in_file, char* out_file, char *char_to_code[]){
+
+	FILE *in_fp = fopen(in_file, "r");
+	if(in_fp == NULL) {
+		fprintf(stderr, "File Error: %s does not exist\n", in_file);
+		exit(2);
+	}
+	
+	FILE *out_fp = fopen(out_file, "wb");
+	if(out_fp == NULL) {
+		fprintf(stderr, "File Error: Could not open %s\n", out_file);
+		exit(2);
+	}
+
+	char ch;
+	
+	while((ch = fgetc(in_fp)) != EOF){
+		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
+			ch = fgetc(in_fp);
+		}
+		unsigned char unsign_ch = ch-128;
+		char *code = char_to_code[unsign_ch];
+		fputs(code, out_fp);
+	}
+	
+	fclose(in_fp);
+        
+	
+	//Convert each 8 bits to byte
+	//This is not necesssary as we only want the bits represented as chars
+
+/*	char binary_string[2000];
+	binary_string[0]='\0';
+	int i=0;
+	int byte;
+	char *ptr; //I don't know why i need this for strol
+	char substring[8];
+	substring[0] = '\0';
+
+	for(i=0;i<strlen(binary_string);i+=8){
+		strncpy(substring,&binary_string[i], 7);
+		//printf("%s\n", binary_string);
+		printf("%s\n", substring);
+		byte = strtol(substring, &ptr, 2);
+		//printf("%x ",byte);
+		fputc(byte, out_fp);
+	}
+*/
+
+	fclose(out_fp);
+
+}
+//Main function to drive the Huffman Tree building
+//Takes input.txt and generates input.txt.huf and input.txt.lut
+int main(int argc, char *argv[]) {
+
+    if(argc!=2) {
+        fprintf(stderr, "Argument Error: Expected ./encode input.txt\n");
+	    return 1;
+    }
+
+    //Adding .huf and .lut extensions
+    //****** -> I hate working with strings in C <- ******
+    int f_len = strlen(argv[1]);
+    char *in_file, out_file[f_len+4], lut_file[f_len+4];
+    in_file = argv[1];
+    strncpy(out_file, argv[1], f_len);
+    strncpy(lut_file, argv[1], f_len);
+    out_file[f_len] = '\0';
+    lut_file[f_len] = '\0';
+    strncat(out_file, ".huf", 4);
+    strncat(lut_file, ".lut", 4);
+
+    int freq_values[NUM_LETTERS] = {0}; //initialize array to 0's
+
+    get_freq_values(in_file, freq_values);
+
+    unsigned char letter[NUM_LETTERS] = {0}; //array where index=value for all i
+    int i;
+    for(i=0;i<NUM_LETTERS;i++){
+	    letter[i]=i;
+    }
+
+    //TODO: call Tree building here
+    struct Node* tree_root = build_huffman_tree(letter, freq_values, NUM_LETTERS);
+    Tree_inOrder(tree_root);
+
+    int code[MAX_CODE_LEN];
+    char *char_to_code[NUM_LETTERS];
+    get_huffman_codes(tree_root, code, 0, char_to_code);
+
+    generate_LUT(lut_file, char_to_code);
+
+    encode_file(in_file, out_file, char_to_code);
+
+    return 0;
+}
