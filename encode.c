@@ -8,14 +8,45 @@
 //#define ALPHABET_SIZE 80 i dont think this is used
 
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos))) //Baby function to check if a bit in a position is set
-#define NUM_LETTERS 64 //(191-128)+1 for padding
-#define MAX_CODE_LEN 112 //Longest code I saw was 109 digits long, slightly less than 14 bytes
+#define NUM_LETTERS 26 //Trying new alphabet of Len 26
+#define MAX_CODE_LEN 40 //Reducing Max Len based on new alphabet
+
+//-----GLOBALS-----
+//alphabet LUT that holds the 2nd byte for all French UTF-8 letter in our language
+int french_alphabet_LUT[NUM_LETTERS] = {
+    128,
+    130,
+    135,
+    136,
+    137,
+    138,
+    139,
+    142,
+    143,
+    148,
+    153,
+    155,
+    156,
+    160,
+    162,
+    167,
+    168,
+    169,
+    170,
+    171,
+    174,
+    175,
+    180,
+    185,
+    187,
+    188
+};
 
 //-----DATA STRUCTURES-----
 //Huffman tree (MinHeap) node
 typedef struct Node{
 
-    char letter;     //the letter specified
+    unsigned char letter;     //the letter specified
     unsigned int freq;   //frequency of letter
     struct Node *left, *right;  //the Node's children - maximum 2
 }Node;
@@ -220,9 +251,9 @@ void push(struct StackNode** top_ref, struct Node* node){
   struct StackNode* new_stack_node = (struct StackNode*) malloc(sizeof(StackNode));
  
   if(new_stack_node == NULL){
-     printf("Stack Overflow! \n");
-     getchar();
-     exit(0);
+    printf("Stack Overflow! \n");
+    getchar();
+    exit(0);
   }           
  
   //put in the new Node object which holds data (letter, freq, children)
@@ -320,8 +351,14 @@ void get_freq_values(char* filename, int *arr){
 			fprintf(stderr, "ASCII value %d passed. Don't pass any newlines, whitespace, a-zA-Z0-9 etc...", unsign_ch);
 			exit(1);
 		}
-		unsign_ch = ch - 128;
-		arr[unsign_ch] += 1;
+		//unsign_ch = ch - 128;
+        for(int i = 0; i < NUM_LETTERS; i++){
+            if(unsign_ch == french_alphabet_LUT[i]){
+                arr[i] += 1;
+                break;
+            }
+        }
+		//arr[unsign_ch] += 1;
 	}
 	fclose(fp);
 }
@@ -354,8 +391,9 @@ void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_cod
         //printf("%c: ", index);
 	//print_array(code, top);
 	
-	unsigned char index = root->letter;
-  	char_to_code[index]= int_array_to_string(code,top);
+	    unsigned char index = root->letter;
+  	    char_to_code[index]= int_array_to_string(code,top);
+        printf("Letter: '%d' with code %s\n", index, char_to_code[index]);
     }
 
     return;
@@ -370,7 +408,7 @@ void Tree_inOrder(Node* n){
 
     Tree_inOrder(n->left);
     if(is_leaf_node(n)){
-	//printf("Letter: '%c' with frequency %d\n", n->letter, n->freq);
+	    printf("Tree InOrder Traversal - Letter: '%d' with frequency %d\n", n->letter, n->freq);
     }
     Tree_inOrder(n->right);
 
@@ -383,13 +421,41 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
 		fprintf(stderr, "File Error: Could not open %s\n", lut_file);
 		exit(2);
 	}
-	int i;
+	/*int i;
 	for(i=0;i<NUM_LETTERS;i++){
 		//for each non empty array index -> print to file
 		if(char_to_code[i][0] != '\0'){
 			fprintf(lut_fp, "%d, %s\n", i+128, char_to_code[i]); 
 		}
-	}
+	}*/
+
+    //print to LUT file all indices for 26 valid French characters in input2.txt (2nd byte acts as index)
+    fprintf(lut_fp, "%d, %s\n", 128, char_to_code[128]);
+    fprintf(lut_fp, "%d, %s\n", 130, char_to_code[130]); 
+    fprintf(lut_fp, "%d, %s\n", 135, char_to_code[135]);
+    fprintf(lut_fp, "%d, %s\n", 136, char_to_code[136]); 
+    fprintf(lut_fp, "%d, %s\n", 137, char_to_code[137]); 
+    fprintf(lut_fp, "%d, %s\n", 138, char_to_code[138]); 
+    fprintf(lut_fp, "%d, %s\n", 139, char_to_code[139]); 
+    fprintf(lut_fp, "%d, %s\n", 142, char_to_code[142]); 
+    fprintf(lut_fp, "%d, %s\n", 143, char_to_code[143]); 
+    fprintf(lut_fp, "%d, %s\n", 148, char_to_code[148]); 
+    fprintf(lut_fp, "%d, %s\n", 153, char_to_code[153]); 
+    fprintf(lut_fp, "%d, %s\n", 155, char_to_code[155]);
+    fprintf(lut_fp, "%d, %s\n", 156, char_to_code[156]); 
+    fprintf(lut_fp, "%d, %s\n", 160, char_to_code[160]);
+    fprintf(lut_fp, "%d, %s\n", 162, char_to_code[162]); 
+    fprintf(lut_fp, "%d, %s\n", 167, char_to_code[167]);
+    fprintf(lut_fp, "%d, %s\n", 168, char_to_code[168]); 
+    fprintf(lut_fp, "%d, %s\n", 169, char_to_code[169]); 
+    fprintf(lut_fp, "%d, %s\n", 170, char_to_code[170]); 
+    fprintf(lut_fp, "%d, %s\n", 171, char_to_code[171]); 
+    fprintf(lut_fp, "%d, %s\n", 174, char_to_code[174]); 
+    fprintf(lut_fp, "%d, %s\n", 175, char_to_code[175]);
+    fprintf(lut_fp, "%d, %s\n", 180, char_to_code[180]);
+    fprintf(lut_fp, "%d, %s\n", 185, char_to_code[185]); 
+    fprintf(lut_fp, "%d, %s\n", 187, char_to_code[187]); 
+    fprintf(lut_fp, "%d, %s\n", 188, char_to_code[188]); 
 }
 
 //Function to Huffman encode file and output it to a binary file, given the code translations
@@ -413,7 +479,8 @@ void encode_file(char* in_file, char* out_file, char *char_to_code[]){
 		if(CHECK_BIT(ch, 7)){ //checks if 8th bit is 1
 			ch = fgetc(in_fp);
 		}
-		unsigned char unsign_ch = ch-128;
+		unsigned char unsign_ch = ch; //removed -128 here
+        printf("%d\n", unsign_ch);
 		char *code = char_to_code[unsign_ch];
 		fputs(code, out_fp);
 	}
@@ -470,22 +537,55 @@ int main(int argc, char *argv[]) {
 
     get_freq_values(in_file, freq_values);
 
-    unsigned char letter[NUM_LETTERS] = {0}; //array where index=value for all i
+    unsigned char letter[NUM_LETTERS] = {0}; //value is now the French character's 2nd byte value
     int i;
+
+    //creating letters for the French alphabet specifically
     for(i=0;i<NUM_LETTERS;i++){
-	    letter[i]=i;
+	    letter[i] = french_alphabet_LUT[i];
     }
+
+    //view the frequencies
+    /*for(i=0;i<NUM_LETTERS;i++){
+	    printf("Letter: %d, Freq value: %d\n", letter[i], freq_values[i]);
+    }*/
 
     //TODO: call Tree building here
     struct Node* tree_root = build_huffman_tree(letter, freq_values, NUM_LETTERS);
     Tree_inOrder(tree_root);
 
     int code[MAX_CODE_LEN];
-    char *char_to_code[NUM_LETTERS];
+    char *char_to_code[200] = { 0 };
     get_huffman_codes(tree_root, code, 0, char_to_code);
 
+    //print temporary char arr
+    for(i=0;i<200;i++){
+        if(char_to_code[i] != NULL){
+	        printf("Letter: %d, Code: %s\n", i, char_to_code[i]);
+        }
+        else{
+            printf("Letter: %d, Code: NULL\n", i);
+        }
+    }
+
+    //map the characters in char_to_code array to the 26-length French alphabet
+    /*char* mapped_code[NUM_LETTERS] = { 0 };
+    int j = 0;
+    for(i = 0; i < 200; i++){
+        if(char_to_code[i] != NULL){
+            mapped_code[j] = char_to_code[i];
+            j++;
+        }
+    }
+
+    for(i=0;i<NUM_LETTERS;i++){
+	    printf("MAPPED: Letter: %d, Code: %s\n", i, mapped_code[i]);
+    }*/
+
+    //TO FIX
     generate_LUT(lut_file, char_to_code);
 
+    //TO FIX
     encode_file(in_file, out_file, char_to_code);
 
     return 0;
