@@ -113,7 +113,7 @@ void iterative_min_heapify(struct MinHeap* heap, int index){
     struct Node* temp;
 
     //event loop
-    while(1){
+    /*while(1){
 
         //set smallest variable & L/R subtree 
         smallest = index;
@@ -143,6 +143,29 @@ void iterative_min_heapify(struct MinHeap* heap, int index){
         temp = heap->list[smallest];
         heap->list[smallest] = heap->list[index];
         heap->list[index] = temp;
+    }*/
+
+    //try out recursive implementation of heapify function
+    smallest = index;
+    left = 2 * index + 1;
+    right = 2 * index + 2;
+ 
+    if (left < heap->size
+        && heap->list[left]->freq
+               < heap->list[smallest]->freq)
+        smallest = left;
+ 
+    if (right < heap->size
+        && heap->list[right]->freq
+               < heap->list[smallest]->freq)
+        smallest = right;
+ 
+    if (smallest != index) {
+        //swap min heap node 
+        temp = heap->list[smallest];
+        heap->list[smallest] = heap->list[index];
+        heap->list[index] = temp;
+        iterative_min_heapify(heap, smallest);
     }
 
     return;
@@ -198,7 +221,7 @@ struct Node* remove_min_node(struct MinHeap* heap){
     struct Node* temp = heap->list[0];
 
     //replace list index 0 with the last element, then heapify again
-    heap->list[0] = heap->list[(heap->size) - 1];
+    heap->list[0] = heap->list[heap->size - 1];
     heap->size--;
     iterative_min_heapify(heap, 0);
  
@@ -221,9 +244,10 @@ struct Node* build_huffman_tree(char letter[], int freq[], int size){
         //remove the 2 minimum frequency Nodes from the MinHeap list
         left_child = remove_min_node(heap);
         right_child = remove_min_node(heap);
+        printf("Removed nodes: (%d with freq %d) & (%d with freq %d)\n", left_child->letter, left_child->freq, right_child->letter, right_child->freq);
 
         //create a new internal node on each iteration - placeholder character & sum of children's frequencies
-        internal_node = create_new_node('!', left_child->freq + right_child->freq);
+        internal_node = create_new_node('0'-48, left_child->freq + right_child->freq);
  
         //set internal Node's children
         internal_node->left = left_child;
@@ -430,32 +454,40 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
 	}*/
 
     //print to LUT file all indices for 26 valid French characters in input2.txt (2nd byte acts as index)
-    fprintf(lut_fp, "%d, %s\n", 128, char_to_code[128]);
-    fprintf(lut_fp, "%d, %s\n", 130, char_to_code[130]); 
-    fprintf(lut_fp, "%d, %s\n", 135, char_to_code[135]);
-    fprintf(lut_fp, "%d, %s\n", 136, char_to_code[136]); 
-    fprintf(lut_fp, "%d, %s\n", 137, char_to_code[137]); 
-    fprintf(lut_fp, "%d, %s\n", 138, char_to_code[138]); 
-    fprintf(lut_fp, "%d, %s\n", 139, char_to_code[139]); 
-    fprintf(lut_fp, "%d, %s\n", 142, char_to_code[142]); 
-    fprintf(lut_fp, "%d, %s\n", 143, char_to_code[143]); 
-    fprintf(lut_fp, "%d, %s\n", 148, char_to_code[148]); 
-    fprintf(lut_fp, "%d, %s\n", 153, char_to_code[153]); 
-    fprintf(lut_fp, "%d, %s\n", 155, char_to_code[155]);
-    fprintf(lut_fp, "%d, %s\n", 156, char_to_code[156]); 
-    fprintf(lut_fp, "%d, %s\n", 160, char_to_code[160]);
-    fprintf(lut_fp, "%d, %s\n", 162, char_to_code[162]); 
-    fprintf(lut_fp, "%d, %s\n", 167, char_to_code[167]);
-    fprintf(lut_fp, "%d, %s\n", 168, char_to_code[168]); 
-    fprintf(lut_fp, "%d, %s\n", 169, char_to_code[169]); 
-    fprintf(lut_fp, "%d, %s\n", 170, char_to_code[170]); 
-    fprintf(lut_fp, "%d, %s\n", 171, char_to_code[171]); 
-    fprintf(lut_fp, "%d, %s\n", 174, char_to_code[174]); 
-    fprintf(lut_fp, "%d, %s\n", 175, char_to_code[175]);
-    fprintf(lut_fp, "%d, %s\n", 180, char_to_code[180]);
-    fprintf(lut_fp, "%d, %s\n", 185, char_to_code[185]); 
-    fprintf(lut_fp, "%d, %s\n", 187, char_to_code[187]); 
-    fprintf(lut_fp, "%d, %s\n", 188, char_to_code[188]); 
+    //checking is needed so we only add characters to the LUT if they appeared in the original input file
+    for(int i = 0; i < 200; i++){
+
+        if(char_to_code[i] != NULL){
+            fprintf(lut_fp, "%d, %s\n", i, char_to_code[i]);
+        }
+    }
+
+        /*fprintf(lut_fp, "%d, %s\n", 128, char_to_code[128]);
+        fprintf(lut_fp, "%d, %s\n", 130, char_to_code[130]); 
+        fprintf(lut_fp, "%d, %s\n", 135, char_to_code[135]);
+        fprintf(lut_fp, "%d, %s\n", 136, char_to_code[136]); 
+        fprintf(lut_fp, "%d, %s\n", 137, char_to_code[137]); 
+        fprintf(lut_fp, "%d, %s\n", 138, char_to_code[138]); 
+        fprintf(lut_fp, "%d, %s\n", 139, char_to_code[139]); 
+        fprintf(lut_fp, "%d, %s\n", 142, char_to_code[142]); 
+        fprintf(lut_fp, "%d, %s\n", 143, char_to_code[143]); 
+        fprintf(lut_fp, "%d, %s\n", 148, char_to_code[148]); 
+        fprintf(lut_fp, "%d, %s\n", 153, char_to_code[153]); 
+        fprintf(lut_fp, "%d, %s\n", 155, char_to_code[155]);
+        fprintf(lut_fp, "%d, %s\n", 156, char_to_code[156]); 
+        fprintf(lut_fp, "%d, %s\n", 160, char_to_code[160]);
+        fprintf(lut_fp, "%d, %s\n", 162, char_to_code[162]); 
+        fprintf(lut_fp, "%d, %s\n", 167, char_to_code[167]);
+        fprintf(lut_fp, "%d, %s\n", 168, char_to_code[168]); 
+        fprintf(lut_fp, "%d, %s\n", 169, char_to_code[169]); 
+        fprintf(lut_fp, "%d, %s\n", 170, char_to_code[170]); 
+        fprintf(lut_fp, "%d, %s\n", 171, char_to_code[171]); 
+        fprintf(lut_fp, "%d, %s\n", 174, char_to_code[174]); 
+        fprintf(lut_fp, "%d, %s\n", 175, char_to_code[175]);
+        fprintf(lut_fp, "%d, %s\n", 180, char_to_code[180]);
+        fprintf(lut_fp, "%d, %s\n", 185, char_to_code[185]); 
+        fprintf(lut_fp, "%d, %s\n", 187, char_to_code[187]); 
+        fprintf(lut_fp, "%d, %s\n", 188, char_to_code[188]);*/
 }
 
 //Function to Huffman encode file and output it to a binary file, given the code translations
@@ -550,8 +582,23 @@ int main(int argc, char *argv[]) {
 	    printf("Letter: %d, Freq value: %d\n", letter[i], freq_values[i]);
     }*/
 
-    //TODO: call Tree building here
-    struct Node* tree_root = build_huffman_tree(letter, freq_values, NUM_LETTERS);
+    //for the case that some characters do not ever appear, remove values from the arrays
+    int found_freq_values[NUM_LETTERS];
+    unsigned char found_letter[NUM_LETTERS];
+    int size = 0;
+    for(i=0;i<NUM_LETTERS;i++){
+        if(freq_values[i] != 0){
+            found_freq_values[size] = freq_values[i];
+            found_letter[size] = letter[i];
+            size++;
+        }
+    }
+    found_freq_values[size] = 0;
+    found_letter[size] = '\0';
+
+
+    //create Huffman Tree containing only seen characters
+    struct Node* tree_root = build_huffman_tree(found_letter, found_freq_values, size);
     Tree_inOrder(tree_root);
 
     int code[MAX_CODE_LEN];
