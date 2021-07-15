@@ -191,10 +191,10 @@ void huffman_decode(FILE* input_fp){
     char* end_ptr;
     char decoded_letter;
 
-    //decoding loop
-    while(true){
+    //decoding loop - ends when all bits of the full encoded string were 'shifted' off
+    while(decoded_shift < file_len){
 
-        //get code of length HWIDTH from the buffer
+        //get code of length HWIDTH from the buffer (req'd for indexing main LUT)
         for(i = 0; i < HWIDTH; i++){
             code_str[i] = str_buffer[i + decoded_shift];
         }
@@ -214,11 +214,39 @@ void huffman_decode(FILE* input_fp){
 
         //perform lookup table access, where the Huffman code is the table index
         decoded_letter = LUT[code][0];
-        decoded_shift += LUT[code][1];
+        
+        //Extended LUT case: check if extended LUT needs to be accessed - if so, grab the next required encoded bits
+        if(decoded_letter == '&'){
+
+            //get more bits, which add up to MAXLENGTH encoded bits (req'd for indexing extended LUT)
+            int j;
+            for(j = 0; j < (MAXWIDTH - HWIDTH); j++){
+                code_str[i + j] = str_buffer[i + decoded_shift + j];
+            }
+            code_str[i + j] = '\0';
+            code = strtol(code_str, &end_ptr, 2);
+
+            if(*end_ptr != '\0'){
+                fputs("Code passed was not null-terminated. Exiting program", stderr);
+                exit(1);
+            }
+
+            printf("Extended numeric code: %d\n", code);
+
+            //perform lookup on extended LUT
+            decoded_letter = extended_LUT[code][0];
+            decoded_shift += extended_LUT[code][1];
+        }
+
+        //Regular case: keep the original decoded letter & apply original shift value
+        else{
+            decoded_shift += LUT[code][1];
+        }
 
         //TODO: create function to handle writing French UTF-8 characters to the output file
-
-        exit(0);
+        //TEMPORARY: write decoded letter to the file
+        printf("Decoded letter: %c; Decoded shift value: %d\n", decoded_letter, decoded_shift);
+        fputc(decoded_letter, output_fp);
     }
 
     fclose(output_fp);
