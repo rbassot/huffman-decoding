@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <wchar.h>
+#include <locale.h>
 
 /*
 * REQUIRED SETUP STEPS:
@@ -189,7 +191,9 @@ void huffman_decode(FILE* input_fp){
     int i;
     int decoded_shift = 0;
     char* end_ptr;
-    char decoded_letter;
+    setlocale(LC_CTYPE, "");
+    wchar_t decoded_letter;
+    unsigned int prefix = 49920;
 
     //decoding loop - ends when all bits of the full encoded string were 'shifted' off
     while(decoded_shift < file_len){
@@ -243,10 +247,9 @@ void huffman_decode(FILE* input_fp){
             decoded_shift += LUT[code][1];
         }
 
-        //TODO: create function to handle writing French UTF-8 characters to the output file
-        //TEMPORARY: write decoded letter to the file
-        printf("Decoded letter: %c; Decoded shift value: %d\n", decoded_letter, decoded_shift);
-        fputc(decoded_letter, output_fp);
+	decoded_letter += 128;
+	fprintf(output_fp, "%lc", decoded_letter);
+        printf("Decoded letter: %lc; Decoded shift value: %d\n", decoded_letter, decoded_shift);
     }
 
     fclose(output_fp);
