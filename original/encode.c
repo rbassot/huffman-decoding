@@ -101,10 +101,6 @@ struct MinHeap* create_min_heap(unsigned int capacity){
 }
 
 
-//-----FUNCTION DECLARATIONS-----
-char* itoa(int, char* , int);
-
-
 //-----SUBROUTINES-----
 /* MinHeapify to compare values for heap building - iterative algorithm for efficiency
 *   - A min heap must have all possible subtrees as min heaps as well, by definition
@@ -468,7 +464,8 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
 
                 //get length of first index to print to avoid overwriting when reprinting first line for input.txt.lut
                 char index[5];
-                itoa(i, index, 10);
+                //itoa(i, index, 10); AVOID itoa() non-standard
+                snprintf(index, 10, "%d", i);
                 int index_len = strlen(index);
                 
                 //print as many characters as index len + 1 (for trailing comma)
