@@ -180,7 +180,6 @@ void huffman_decode(FILE* input_fp){
             code_str[i] = str_buffer[i + decoded_shift];
         }
         code_str[i] = '\0';
-        printf("Current code str: %s\n", code_str);
 
         //convert code string to numeric index
         code = strtol(code_str, &end_ptr, 2);
@@ -190,8 +189,6 @@ void huffman_decode(FILE* input_fp){
             fputs("Code passed was not null-terminated. Exiting program", stderr);
             exit(1);
         }
-
-        printf("Current numeric code: %d\n", code);
 
         //perform lookup table access, where the Huffman code is the table index
         decoded_letter = LUT[code][0];
@@ -212,8 +209,6 @@ void huffman_decode(FILE* input_fp){
                 exit(1);
             }
 
-            printf("Extended numeric code: %d\n", code);
-
             //perform lookup on extended LUT
             decoded_letter = extended_LUT[code][0];
             decoded_shift += extended_LUT[code][1];
@@ -225,10 +220,9 @@ void huffman_decode(FILE* input_fp){
         }
 
         //tack on the first byte of the UTF-8 character, then print to file 
-	    decoded_letter += prefix; //I think this would be right? To create the 2-byte char?
+	    //decoded_letter += prefix;
         //decoded_letter += 128;
-	    fprintf(output_fp, "%lc", decoded_letter);
-        printf("Decoded letter: %lc; Decoded shift value: %d\n", decoded_letter, decoded_shift);
+	    fprintf(output_fp, "%c%c", 195, decoded_letter);
     }
 
     fclose(output_fp);
