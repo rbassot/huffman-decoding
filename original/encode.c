@@ -101,6 +101,10 @@ struct MinHeap* create_min_heap(unsigned int capacity){
 }
 
 
+//-----FUNCTION DECLARATIONS-----
+char* itoa(int, char* , int);
+
+
 //-----SUBROUTINES-----
 /* MinHeapify to compare values for heap building - iterative algorithm for efficiency
 *   - A min heap must have all possible subtrees as min heaps as well, by definition
