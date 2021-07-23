@@ -247,8 +247,10 @@ void huffman_decode(FILE* input_fp){
             decoded_shift += LUT[code][1];
         }
 
-	decoded_letter += 128;
-	fprintf(output_fp, "%lc", decoded_letter);
+	    decoded_letter += 128;
+        printf("LETTER %d\n", decoded_letter);
+        exit(0);
+	    fprintf(output_fp, "%lc", decoded_letter);
         printf("Decoded letter: %lc; Decoded shift value: %d\n", decoded_letter, decoded_shift);
     }
 

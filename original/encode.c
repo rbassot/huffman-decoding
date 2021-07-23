@@ -445,22 +445,50 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
 		fprintf(stderr, "File Error: Could not open %s\n", lut_file);
 		exit(2);
 	}
-	/*int i;
-	for(i=0;i<NUM_LETTERS;i++){
-		//for each non empty array index -> print to file
-		if(char_to_code[i][0] != '\0'){
-			fprintf(lut_fp, "%d, %s\n", i+128, char_to_code[i]); 
-		}
-	}*/
+	
+    //print first line of LUT, denoting min and max code size
+    //fprintf(lut_fp, "%d, %d\n", i, char_to_code[i]);
 
     //print to LUT file all indices for 26 valid French characters in input2.txt (2nd byte acts as index)
     //checking is needed so we only add characters to the LUT if they appeared in the original input file
+    short max_code_len;
+    short min_code_len;
+    short first_code_seen = 0;
     for(int i = 0; i < 200; i++){
 
         if(char_to_code[i] != NULL){
-            fprintf(lut_fp, "%d, %s\n", i, char_to_code[i]);
+
+            if(!first_code_seen){
+                max_code_len = strlen(char_to_code[i]);
+                min_code_len = strlen(char_to_code[i]);
+
+                //get length of first index to print to avoid overwriting when reprinting first line for input.txt.lut
+                char index[5];
+                itoa(i, index, 10);
+                int index_len = strlen(index);
+                
+                //print as many characters as index len + 1 (for trailing comma)
+                for(int j = 0; j < index_len + 1; j++){
+                    fprintf(lut_fp, "\n");
+                }
+
+                first_code_seen = 1;
+            }
+
+            else if(strlen(char_to_code[i]) > max_code_len){
+                max_code_len = strlen(char_to_code[i]);
+            }
+            else if(strlen(char_to_code[i]) < min_code_len){
+                min_code_len = strlen(char_to_code[i]);
+            }
+
+            fprintf(lut_fp, "%d,%s\n", i, char_to_code[i]);
         }
     }
+
+    //finally, print the min/max lengths to the first line of file
+    rewind(lut_fp);
+    fprintf(lut_fp, "%d,%d\n", min_code_len, max_code_len);
 
         /*fprintf(lut_fp, "%d, %s\n", 128, char_to_code[128]);
         fprintf(lut_fp, "%d, %s\n", 130, char_to_code[130]); 
