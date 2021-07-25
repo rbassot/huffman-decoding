@@ -102,70 +102,35 @@ struct MinHeap* create_min_heap(unsigned int capacity){
 
 
 //-----SUBROUTINES-----
-/* MinHeapify to compare values for heap building - iterative algorithm for efficiency
+/* MinHeapify to compare values for heap building - *recursive* algorithm for efficiency
 *   - A min heap must have all possible subtrees as min heaps as well, by definition
 */
-void iterative_min_heapify(struct MinHeap* heap, int index){
+void min_heapify(struct MinHeap* heap, int index){
 
     int smallest;
     unsigned int left;
     unsigned int right;
     struct Node* temp;
 
-    //event loop
-    /*while(1){
-
-        //set smallest variable & L/R subtree 
-        smallest = index;
-        left = 2 * index + 1;
-        right = 2 * index + 2;
-
-        //compare left subtree size & value to find Node w/ smallest freq value
-        if(left < heap->size &&
-            heap->list[left]->freq < heap->list[smallest]->freq){
-
-            smallest = left;
-        }
-
-        //compare right subtree
-        if(right < heap->size &&
-            heap->list[right]->freq < heap->list[smallest]->freq){
-
-            smallest = right;
-        }
-
-        //break case - the smallest value is at the original heap index passed, meaning subtree is heapified
-        if(index == smallest){
-            break;
-        }
-
-        //else - swap the Nodes at 'index' & 'smallest'
-        temp = heap->list[smallest];
-        heap->list[smallest] = heap->list[index];
-        heap->list[index] = temp;
-    }*/
-
     //try out recursive implementation of heapify function
     smallest = index;
     left = 2 * index + 1;
     right = 2 * index + 2;
  
-    if (left < heap->size
-        && heap->list[left]->freq
-               < heap->list[smallest]->freq)
+    if(left < heap->size && heap->list[left]->freq < heap->list[smallest]->freq){
         smallest = left;
+    }
  
-    if (right < heap->size
-        && heap->list[right]->freq
-               < heap->list[smallest]->freq)
+    if(right < heap->size && heap->list[right]->freq < heap->list[smallest]->freq){
         smallest = right;
+    }
  
-    if (smallest != index) {
+    if(smallest != index){
         //swap min heap node 
         temp = heap->list[smallest];
         heap->list[smallest] = heap->list[index];
         heap->list[index] = temp;
-        iterative_min_heapify(heap, smallest);
+        min_heapify(heap, smallest);
     }
 
     return;
@@ -188,7 +153,7 @@ struct MinHeap* build_min_heap(char letter[], unsigned int freq[], unsigned int 
     //build the min heap - compare all possible subtrees in order of largest size -> smallest size
     int n = size - 1; 
     for (int i = (n - 1) / 2; i >= 0; i--){
-        iterative_min_heapify(heap, i);
+        min_heapify(heap, i);
     }
 
     return heap;
@@ -223,7 +188,7 @@ struct Node* remove_min_node(struct MinHeap* heap){
     //replace list index 0 with the last element, then heapify again
     heap->list[0] = heap->list[heap->size - 1];
     heap->size--;
-    iterative_min_heapify(heap, 0);
+    min_heapify(heap, 0);
  
     return temp;
 }
@@ -239,12 +204,10 @@ struct Node* build_huffman_tree(char letter[], int freq[], int size){
 
     //iterate through each Node in heap & build the Huffman Tree
     while(heap->size > 1){
-        //printf("%d\n", heap->size);
 
         //remove the 2 minimum frequency Nodes from the MinHeap list
         left_child = remove_min_node(heap);
         right_child = remove_min_node(heap);
-        printf("Removed nodes: (%d with freq %d) & (%d with freq %d)\n", left_child->letter, left_child->freq, right_child->letter, right_child->freq);
 
         //create a new internal node on each iteration - placeholder character & sum of children's frequencies
         internal_node = create_new_node('0'-48, left_child->freq + right_child->freq);
@@ -321,8 +284,8 @@ struct Node* pop(struct StackNode** top_ref){
 
 
 // A utility function to print an array of size n
-void print_array(int arr[], int n)
-{
+void print_array(int arr[], int n){
+
     int i;
     for (i = 0; i < n; ++i)
         printf("%d", arr[i]);
@@ -412,12 +375,9 @@ void get_huffman_codes(struct Node* root, int code[], int top, char *char_to_cod
     // characters, print the character
     // and its code from arr[]
     if (is_leaf_node(root)) {
-        //printf("%c: ", index);
-	//print_array(code, top);
-	
+	    //print_array(code, top);
 	    unsigned char index = root->letter;
   	    char_to_code[index]= int_array_to_string(code,top);
-        printf("Letter: '%d' with code %s\n", index, char_to_code[index]);
     }
 
     return;
@@ -445,11 +405,7 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
 		fprintf(stderr, "File Error: Could not open %s\n", lut_file);
 		exit(2);
 	}
-	
-    //print first line of LUT, denoting min and max code size
-    //fprintf(lut_fp, "%d, %d\n", i, char_to_code[i]);
 
-    //print to LUT file all indices for 26 valid French characters in input2.txt (2nd byte acts as index)
     //checking is needed so we only add characters to the LUT if they appeared in the original input file
     short max_code_len;
     short min_code_len;
@@ -490,33 +446,6 @@ void generate_LUT(char* lut_file, char *char_to_code[]){
     //finally, print the min/max lengths to the first line of file
     rewind(lut_fp);
     fprintf(lut_fp, "%d,%d\n", min_code_len, max_code_len);
-
-        /*fprintf(lut_fp, "%d, %s\n", 128, char_to_code[128]);
-        fprintf(lut_fp, "%d, %s\n", 130, char_to_code[130]); 
-        fprintf(lut_fp, "%d, %s\n", 135, char_to_code[135]);
-        fprintf(lut_fp, "%d, %s\n", 136, char_to_code[136]); 
-        fprintf(lut_fp, "%d, %s\n", 137, char_to_code[137]); 
-        fprintf(lut_fp, "%d, %s\n", 138, char_to_code[138]); 
-        fprintf(lut_fp, "%d, %s\n", 139, char_to_code[139]); 
-        fprintf(lut_fp, "%d, %s\n", 142, char_to_code[142]); 
-        fprintf(lut_fp, "%d, %s\n", 143, char_to_code[143]); 
-        fprintf(lut_fp, "%d, %s\n", 148, char_to_code[148]); 
-        fprintf(lut_fp, "%d, %s\n", 153, char_to_code[153]); 
-        fprintf(lut_fp, "%d, %s\n", 155, char_to_code[155]);
-        fprintf(lut_fp, "%d, %s\n", 156, char_to_code[156]); 
-        fprintf(lut_fp, "%d, %s\n", 160, char_to_code[160]);
-        fprintf(lut_fp, "%d, %s\n", 162, char_to_code[162]); 
-        fprintf(lut_fp, "%d, %s\n", 167, char_to_code[167]);
-        fprintf(lut_fp, "%d, %s\n", 168, char_to_code[168]); 
-        fprintf(lut_fp, "%d, %s\n", 169, char_to_code[169]); 
-        fprintf(lut_fp, "%d, %s\n", 170, char_to_code[170]); 
-        fprintf(lut_fp, "%d, %s\n", 171, char_to_code[171]); 
-        fprintf(lut_fp, "%d, %s\n", 174, char_to_code[174]); 
-        fprintf(lut_fp, "%d, %s\n", 175, char_to_code[175]);
-        fprintf(lut_fp, "%d, %s\n", 180, char_to_code[180]);
-        fprintf(lut_fp, "%d, %s\n", 185, char_to_code[185]); 
-        fprintf(lut_fp, "%d, %s\n", 187, char_to_code[187]); 
-        fprintf(lut_fp, "%d, %s\n", 188, char_to_code[188]);*/
 }
 
 //Function to Huffman encode file and output it to a binary file, given the code translations
@@ -541,35 +470,11 @@ void encode_file(char* in_file, char* out_file, char *char_to_code[]){
 			ch = fgetc(in_fp);
 		}
 		unsigned char unsign_ch = ch; //removed -128 here
-        printf("%d\n", unsign_ch);
 		char *code = char_to_code[unsign_ch];
 		fputs(code, out_fp);
 	}
 	
 	fclose(in_fp);
-        
-	
-	//Convert each 8 bits to byte
-	//This is not necesssary as we only want the bits represented as chars
-
-/*	char binary_string[2000];
-	binary_string[0]='\0';
-	int i=0;
-	int byte;
-	char *ptr; //I don't know why i need this for strol
-	char substring[8];
-	substring[0] = '\0';
-
-	for(i=0;i<strlen(binary_string);i+=8){
-		strncpy(substring,&binary_string[i], 7);
-		//printf("%s\n", binary_string);
-		printf("%s\n", substring);
-		byte = strtol(substring, &ptr, 2);
-		//printf("%x ",byte);
-		fputc(byte, out_fp);
-	}
-*/
-
 	fclose(out_fp);
 
 }
@@ -583,7 +488,6 @@ int main(int argc, char *argv[]) {
     }
 
     //Adding .huf and .lut extensions
-    //****** -> I hate working with strings in C <- ******
     int f_len = strlen(argv[1]);
     char *in_file, out_file[f_len+4], lut_file[f_len+4];
     in_file = argv[1];
@@ -606,11 +510,6 @@ int main(int argc, char *argv[]) {
 	    letter[i] = french_alphabet_LUT[i];
     }
 
-    //view the frequencies
-    /*for(i=0;i<NUM_LETTERS;i++){
-	    printf("Letter: %d, Freq value: %d\n", letter[i], freq_values[i]);
-    }*/
-
     //for the case that some characters do not ever appear, remove values from the arrays
     int found_freq_values[NUM_LETTERS];
     unsigned char found_letter[NUM_LETTERS];
@@ -628,40 +527,16 @@ int main(int argc, char *argv[]) {
 
     //create Huffman Tree containing only seen characters
     struct Node* tree_root = build_huffman_tree(found_letter, found_freq_values, size);
-    Tree_inOrder(tree_root);
+    //Tree_inOrder(tree_root);
 
     int code[MAX_CODE_LEN];
     char *char_to_code[200] = { 0 };
     get_huffman_codes(tree_root, code, 0, char_to_code);
 
-    //print temporary char arr
-    for(i=0;i<200;i++){
-        if(char_to_code[i] != NULL){
-	        printf("Letter: %d, Code: %s\n", i, char_to_code[i]);
-        }
-        else{
-            printf("Letter: %d, Code: NULL\n", i);
-        }
-    }
-
-    //map the characters in char_to_code array to the 26-length French alphabet
-    /*char* mapped_code[NUM_LETTERS] = { 0 };
-    int j = 0;
-    for(i = 0; i < 200; i++){
-        if(char_to_code[i] != NULL){
-            mapped_code[j] = char_to_code[i];
-            j++;
-        }
-    }
-
-    for(i=0;i<NUM_LETTERS;i++){
-	    printf("MAPPED: Letter: %d, Code: %s\n", i, mapped_code[i]);
-    }*/
-
-    //TO FIX
+    //create the txt.lut file
     generate_LUT(lut_file, char_to_code);
 
-    //TO FIX
+    //create the txt.huf file
     encode_file(in_file, out_file, char_to_code);
 
     return 0;

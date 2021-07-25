@@ -15,11 +15,11 @@
 */
 
 #define FRENCH_ALPHABET_SIZE 35
-#define HWIDTH 3 //This dictates the largest index size of the first LUT - any Huffman Codes longer will be handled
+#define HWIDTH 6 //This dictates the largest index size of the first LUT - any Huffman Codes longer will be handled
                       //through a pointer to the extended LUT
                       //**As long as this power is less than 8, a LUT of type uint8_t can be used!**
 
-#define MAXWIDTH 4 //This dictates the largest index size of the extended LUT - The power is equivalent to
+#define MAXWIDTH 8 //This dictates the largest index size of the extended LUT - The power is equivalent to
                         //the length of the longest existing Huffman code
 
 #define LUT_SIZE 1 << HWIDTH
@@ -39,8 +39,8 @@ void build_lookup_tables(FILE* file){
     char line[256];
     int min_code_len;
     const int max_code_len;
-    char huff_letter;
-    char huff_code[MAXWIDTH + 1];
+    short huff_letter;  //covers up to value 255
+    unsigned char huff_code[MAXWIDTH + 1];
 
     char code_len;
     char* end_ptr;
@@ -55,7 +55,8 @@ void build_lookup_tables(FILE* file){
     //read rest of file line by line
     while(fgets(line, sizeof(line), file)){
         //get values
-        sscanf(line, "%c,%s", &huff_letter, &huff_code);
+        sscanf(line, "%d,%s", &huff_letter, &huff_code);
+        printf("%s\n", line);
 
         //get length of current Huffman code - for storage in the LUT
         code_len = strlen(huff_code);
@@ -65,11 +66,20 @@ void build_lookup_tables(FILE* file){
             //convert string code (binary representation) to number
             uint8_t num_huff_code;
             num_huff_code = (uint8_t)strtol(huff_code, &end_ptr, 2);
-            //printf("Numeric: %d\n", num_huff_code);
 
-            //slot character & code length into the table
-            LUT[num_huff_code][0] = huff_letter;
-            LUT[num_huff_code][1] = code_len;
+            //left shift the huffcode (LUT index) until it is left aligned
+            num_huff_code = num_huff_code << (HWIDTH - code_len);
+
+            //slot character & code length into the table in all indices that have the given buinary prefix
+            int bitmask = ((1 << HWIDTH) - 1) ^ ((1 << (HWIDTH - code_len)) - 1);
+            
+            for(int i = 0; i < LUT_SIZE; i++){
+
+                if(((i & bitmask) ^ (num_huff_code & bitmask)) == 0){
+                    LUT[i][0] = huff_letter;
+                    LUT[i][1] = code_len;
+                }
+            }
         }
 
         //Case 2 - slot character & code length pair into extended LUT
@@ -77,81 +87,48 @@ void build_lookup_tables(FILE* file){
             //convert string code (binary representation) to number
             uint16_t num_huff_code;
             num_huff_code = (uint16_t)strtol(huff_code, &end_ptr, 2);
-            //printf("Numeric: %d\n", num_huff_code);
 
-            //slot character & code length into the extended lookup table
-            extended_LUT[num_huff_code][0] = huff_letter;
-            extended_LUT[num_huff_code][1] = code_len;
+            //left shift the huffcode (LUT index) until it is left aligned
+            num_huff_code = num_huff_code << (MAXWIDTH - code_len);
+
+            //slot character & code length into the table in all indices that have the given buinary prefix
+            int bitmask = ((1 << MAXWIDTH) - 1) ^ ((1 << (MAXWIDTH - code_len)) - 1);
+            
+            for(int i = 0; i < EXT_LUT_SIZE; i++){
+
+                if(((i & bitmask) ^ (num_huff_code & bitmask)) == 0){
+                    extended_LUT[i][0] = huff_letter;
+                    extended_LUT[i][1] = code_len;
+                }
+            }
         }
     }
 
-    //iterate through both LUTs to fill in empty cells - this is necessary to obtain O(1) access with any code encountered
+    //iterate through main LUT to fill in pointer to extended LUT, wherever there currently exists no index
     //main LUT filling
     int prev_letter;
     int prev_code_len;
     int prev_code;
     for(int i = 0; i < LUT_SIZE; i++){
 
-        if(LUT[i][1] != 0){
-            //check prefix to determine if this index is also valid for the given letter
-            prev_letter = LUT[i][0];
-            prev_code_len = LUT[i][1];
-            prev_code = i;
-            continue;
-        }
-
-        else{
-            /*check prefix to determine if this index is also valid for the given letter:
-            *   bit shift the current code to compare its prefix with the previous index's prefix
-            */
-            if(((i >> (HWIDTH - prev_code_len)) ^ (prev_code >> (HWIDTH - prev_code_len))) == 0){
-                LUT[i][0] = prev_letter;
-                LUT[i][1] = prev_code_len;
-            }
-
-            //any remaining empty cells in main LUT require a marker to point to the extended LUT
-            else{
-                LUT[i][0] = '&';
-                LUT[i][1] = HWIDTH;
-            }
+        if(LUT[i][1] == 0){
+            
+            LUT[i][0] = '&';
         }
     }
 
-
-    //extended LUT filling
-    prev_letter = prev_code_len = prev_code = 0;
-    for(int i = 0; i < EXT_LUT_SIZE; i++){
-
-        if(extended_LUT[i][1] != 0){
-            //get the previous values for duplication across following empty table cells
-            prev_letter = extended_LUT[i][0];
-            prev_code_len = extended_LUT[i][1];
-            prev_code = i;
-            continue;
-        }
-
-        else{
-            /*check prefix to determine if this index is also valid for the given letter:
-            *   bit shift the current code to compare its prefix with the **previous index's prefix**
-            */
-            if(((i >> (MAXWIDTH - prev_code_len)) ^ (prev_code >> (MAXWIDTH - prev_code_len))) == 0){
-                extended_LUT[i][0] = prev_letter;
-                extended_LUT[i][1] = prev_code_len;
-            }
-        }
-    }
 
     //try printing main LUT character/code length pairs
     printf("---MAIN LUT---\n");
     printf("INDEX | LETTER, CODE_LEN\n");
     for(int i=0; i < LUT_SIZE; i++){
-        printf("%d | %c, %d\n", i, LUT[i][0], LUT[i][1]);
+        printf("%d | %d, %d\n", i, LUT[i][0], LUT[i][1]);
     }
     printf("\n");
     printf("---EXTENDED LUT---\n");
     printf("INDEX | LETTER, CODE_LEN\n");
     for(int i=0; i < EXT_LUT_SIZE; i++){
-        printf("%d | %c, %d\n", i, extended_LUT[i][0], extended_LUT[i][1]);
+        printf("%d | %d, %d\n", i, extended_LUT[i][0], extended_LUT[i][1]);
     }
 
     return;
@@ -203,7 +180,6 @@ void huffman_decode(FILE* input_fp){
             code_str[i] = str_buffer[i + decoded_shift];
         }
         code_str[i] = '\0';
-        printf("Current code str: %s\n", code_str);
 
         //convert code string to numeric index
         code = strtol(code_str, &end_ptr, 2);
@@ -213,8 +189,6 @@ void huffman_decode(FILE* input_fp){
             fputs("Code passed was not null-terminated. Exiting program", stderr);
             exit(1);
         }
-
-        printf("Current numeric code: %d\n", code);
 
         //perform lookup table access, where the Huffman code is the table index
         decoded_letter = LUT[code][0];
@@ -235,8 +209,6 @@ void huffman_decode(FILE* input_fp){
                 exit(1);
             }
 
-            printf("Extended numeric code: %d\n", code);
-
             //perform lookup on extended LUT
             decoded_letter = extended_LUT[code][0];
             decoded_shift += extended_LUT[code][1];
@@ -247,11 +219,10 @@ void huffman_decode(FILE* input_fp){
             decoded_shift += LUT[code][1];
         }
 
-	    decoded_letter += 128;
-        printf("LETTER %d\n", decoded_letter);
-        exit(0);
-	    fprintf(output_fp, "%lc", decoded_letter);
-        printf("Decoded letter: %lc; Decoded shift value: %d\n", decoded_letter, decoded_shift);
+        //tack on the first byte of the UTF-8 character, then print to file 
+	    //decoded_letter += prefix;
+        //decoded_letter += 128;
+	    fprintf(output_fp, "%c%c", 195, decoded_letter);
     }
 
     fclose(output_fp);

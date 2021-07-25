@@ -50,13 +50,10 @@ void build_lookup_tables(FILE* file){
     sscanf(line, "%d,%d", &min_code_len, 
             &max_code_len);
 
-    printf("%d, %d\n", min_code_len, max_code_len);
-
     //read rest of file line by line
     while(fgets(line, sizeof(line), file)){
         //get values
         sscanf(line, "%d,%s", &huff_letter, &huff_code);
-        printf("%s\n", line);
 
         //get length of current Huffman code - for storage in the LUT
         code_len = strlen(huff_code);
@@ -117,20 +114,6 @@ void build_lookup_tables(FILE* file){
         }
     }
 
-
-    //try printing main LUT character/code length pairs
-    printf("---MAIN LUT---\n");
-    printf("INDEX | LETTER, CODE_LEN\n");
-    for(int i=0; i < LUT_SIZE; i++){
-        printf("%d | %d, %d\n", i, LUT[i][0], LUT[i][1]);
-    }
-    printf("\n");
-    printf("---EXTENDED LUT---\n");
-    printf("INDEX | LETTER, CODE_LEN\n");
-    for(int i=0; i < EXT_LUT_SIZE; i++){
-        printf("%d | %d, %d\n", i, extended_LUT[i][0], extended_LUT[i][1]);
-    }
-
     return;
 }
 
@@ -142,13 +125,12 @@ void huffman_decode(FILE* input_fp){
 
     //create file pointer to output file
     FILE* output_fp;
-    output_fp = fopen("decoded_output.txt", "w");
+    output_fp = fopen("original/decoded_output.txt", "w");
 
     //get length of input file
     long file_len;
     fseek(input_fp, 0, SEEK_END);
     file_len = ftell(input_fp);
-    printf("File length in bytes/chars: %i\n", file_len);
     rewind(input_fp);
 
     //allocate a buffer to store contents of entire file - extra byte for null terminator
@@ -161,7 +143,6 @@ void huffman_decode(FILE* input_fp){
     else{
         str_buffer[end_point++] = '\0';
     }
-    printf("%s\n", str_buffer);
 
     char code_str[MAXWIDTH + 1];
     int code;
@@ -170,7 +151,6 @@ void huffman_decode(FILE* input_fp){
     char* end_ptr;
     setlocale(LC_CTYPE, "");
     wchar_t decoded_letter;
-    unsigned int prefix = 49920;
 
     //decoding loop - ends when all bits of the full encoded string were 'shifted' off
     while(decoded_shift < file_len){
@@ -220,8 +200,6 @@ void huffman_decode(FILE* input_fp){
         }
 
         //tack on the first byte of the UTF-8 character, then print to file 
-	    //decoded_letter += prefix;
-        //decoded_letter += 128;
 	    fprintf(output_fp, "%c%c", 195, decoded_letter);
     }
 
@@ -234,7 +212,7 @@ void huffman_decode(FILE* input_fp){
 int main(int argc, char *argv[]){
 
     if(argc!=3) {
-		fprintf(stderr, "Argument Error: Expected ./decode LUT.txt encoded_input.txt\n");
+		fprintf(stderr, "Argument Error: Expected ./decode input.txt.lut encoded_input.txt.huf\n");
 		return 1;
 	}
 
@@ -245,7 +223,7 @@ int main(int argc, char *argv[]){
       return(-1);
     }
 
-    //initialize the lookup tables with values from LUT.txt - stored as global LUTs
+    //initialize the lookup tables with values from txt.lut file - stored as global LUTs
     build_lookup_tables(file);
     fclose(file);
 
@@ -256,7 +234,7 @@ int main(int argc, char *argv[]){
       return(-1);
     }
 
-    //decode the encoded file
+    //decode the encoded input.txt.huf file
     huffman_decode(file);
     fclose(file);
 
