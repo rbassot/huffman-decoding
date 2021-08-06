@@ -54,13 +54,10 @@ void build_lookup_tables(FILE* file){
     sscanf(line, "%hu,%hu", &min_code_len, 
             &max_code_len);
 
-    printf("%hu, %hu\n", min_code_len, max_code_len);
-
     //read rest of file line by line
     while(fgets(line, sizeof(line), file)){
         //get values
         sscanf(line, "%hu,%s", &huff_letter, huff_code);
-        printf("%s\n", line);
 
         //get length of current Huffman code - for storage in the LUT
         code_len = strlen(huff_code);
@@ -75,6 +72,7 @@ void build_lookup_tables(FILE* file){
             bitmask = ((1 << HWIDTH) - 1) ^ ((1 << (HWIDTH - code_len)) - 1);
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
+            /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
             for(unsigned int i = 0; i < LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code8 & bitmask)) == 0){
@@ -98,6 +96,7 @@ void build_lookup_tables(FILE* file){
             bitmask = ((1 << MAXWIDTH) - 1) ^ ((1 << (MAXWIDTH - code_len)) - 1);
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
+            /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
             for(unsigned int i = 0; i < EXT_LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code16 & bitmask)) == 0){
@@ -117,26 +116,18 @@ void build_lookup_tables(FILE* file){
     unsigned int prev_letter;
     unsigned int prev_code_len;
     unsigned int prev_code;
-    for(unsigned int i = 0; i < LUT_SIZE; i++){
+
+    /* LOOP UNROLLING applied */
+    for(unsigned int i = 0; i < LUT_SIZE; i += 2){
 
         if(LUT[i][1] == 0){
             
             LUT[i][0] = '&';
         }
-    }
-
-
-    //try printing main LUT character/code length pairs
-    printf("---MAIN LUT---\n");
-    printf("INDEX | LETTER, CODE_LEN\n");
-    for(unsigned int i = 0; i < LUT_SIZE; i++){
-        printf("%d | %d, %d\n", i, LUT[i][0], LUT[i][1]);
-    }
-    printf("\n");
-    printf("---EXTENDED LUT---\n");
-    printf("INDEX | LETTER, CODE_LEN\n");
-    for(unsigned int i = 0; i < EXT_LUT_SIZE; i++){
-        printf("%d | %d, %d\n", i, extended_LUT[i][0], extended_LUT[i][1]);
+        if(LUT[i + 1][1] == 0){
+            
+            LUT[i + 1][0] = '&';
+        }
     }
 
     return;
@@ -158,7 +149,6 @@ void huffman_decode(FILE* input_fp){
     //get length of input file - max file length = 2^16 characters
     fseek(input_fp, 0, SEEK_END);
     uint16_t file_len = ftell(input_fp);
-    printf("File length in bytes/chars: %i\n", file_len); //TO REMOVE!!!
     rewind(input_fp);
 
     //allocate a buffer to store contents of entire file - extra byte for null terminator
@@ -171,7 +161,6 @@ void huffman_decode(FILE* input_fp){
     else{
         str_buffer[file_end_ptr++] = '\0';
     }
-    printf("%s\n", str_buffer); //TO REMOVE!!!
 
 
     /* Optimize Local/Register variables where possible */
