@@ -14,7 +14,6 @@
 *           are seen (i.e. uint8_t & uint_16t are currently used). All instances of these type declarations must be changed.
 */
 
-#define FRENCH_ALPHABET_SIZE 35
 #define HWIDTH 6 //This dictates the largest index size of the first LUT - any Huffman Codes longer will be handled
                       //through a pointer to the extended LUT
                       //**As long as this power is less than 8, a LUT of type uint8_t can be used!**
@@ -37,6 +36,7 @@ uint16_t extended_LUT[EXT_LUT_SIZE][2] = { 0 };
 
 void build_lookup_tables(FILE* file){
 
+    unsigned int i; //to avoid needing C99 compile flag
     char line[256];
     unsigned short min_code_len;
     unsigned short max_code_len;
@@ -73,7 +73,7 @@ void build_lookup_tables(FILE* file){
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
             /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
-            for(unsigned int i = 0; i < LUT_SIZE; i += 2){
+            for(i = 0; i < LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code8 & bitmask)) == 0){
                     LUT[i][0] = huff_letter;
@@ -97,7 +97,7 @@ void build_lookup_tables(FILE* file){
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
             /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
-            for(unsigned int i = 0; i < EXT_LUT_SIZE; i += 2){
+            for(i = 0; i < EXT_LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code16 & bitmask)) == 0){
                     extended_LUT[i][0] = huff_letter;
@@ -118,7 +118,7 @@ void build_lookup_tables(FILE* file){
     unsigned int prev_code;
 
     /* LOOP UNROLLING applied */
-    for(unsigned int i = 0; i < LUT_SIZE; i += 2){
+    for(i = 0; i < LUT_SIZE; i += 2){
 
         if(LUT[i][1] == 0){
             
@@ -144,7 +144,7 @@ void huffman_decode(FILE* input_fp){
 
     //create file pointer to output file
     FILE* output_fp;
-    output_fp = fopen("optimized/decoded_output.txt", "w"); //printing file to ./optimized directory now
+    output_fp = fopen("./decoded_output.txt", "w");
 
     //get length of input file - max file length = 2^16 characters
     fseek(input_fp, 0, SEEK_END);
@@ -164,7 +164,7 @@ void huffman_decode(FILE* input_fp){
 
 
     /* Optimize Local/Register variables where possible */
-    //init. required variables for decoding
+    //initialize required variables for decoding
     char code_str[MAXWIDTH + 1];
     unsigned short code; //max value here is: 2^MAXWIDTH, therefore short type is wide enough for our alphabet
     register unsigned int i; //heavily used array index - keeping loop counters as int type to optimize 32-bit addition
