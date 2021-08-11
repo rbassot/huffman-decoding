@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <wchar.h>
 #include <locale.h>
+
 
 /*
 * REQUIRED SETUP STEPS:
