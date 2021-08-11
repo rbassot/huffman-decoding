@@ -135,105 +135,6 @@ void build_lookup_tables(FILE* file){
 }
 
 
-/*Huffman decoding of the provided input file. This function writes to a new file called decoded_output.txt, and will rewrite
-* existing files of that name.
-*/
-void huffman_decode(FILE* input_fp){
-
-    //set locale to FR for printing French UTF-8 to file
-    setlocale(LC_CTYPE, "");
-
-    //create file pointer to output file
-    FILE* output_fp;
-    output_fp = fopen("./decoded_output.txt", "w");
-
-    //get length of input file - max file length = 2^16 characters
-    fseek(input_fp, 0, SEEK_END);
-    uint16_t file_len = ftell(input_fp);
-    rewind(input_fp);
-
-    //allocate a buffer to store contents of entire file - extra byte for null terminator
-    char* str_buffer = malloc(sizeof(char) * (file_len + 1));
-    size_t file_end_ptr = fread(str_buffer, sizeof(char), file_len, input_fp);
-    if (ferror(input_fp) != 0){
-        fputs("Error reading the input file.", stderr);
-        exit(1);
-    }
-    else{
-        str_buffer[file_end_ptr++] = '\0';
-    }
-
-
-    /* Optimize Local/Register variables where possible */
-    //init. required variables for decoding
-    char code_str[MAXWIDTH + 1];
-    unsigned short code; //max value here is: 2^MAXWIDTH, therefore short type is wide enough for our alphabet
-    register unsigned int i; //heavily used array index - keeping loop counters as int type to optimize 32-bit addition
-    unsigned int j;
-    register unsigned int decoded_shift = 0;  //heavily incremented shift marker
-    register uint16_t decoded_letter; //heavily assigned decoded letter variable
-    char* end_ptr;
-
-    //decoding loop - ends when all bits of the full encoded string were 'shifted' off
-    while(decoded_shift < file_len){
-
-        /* LOOP UNROLLING applied - currently allows EVEN valued HWIDTH */
-        //get code of length HWIDTH from the buffer (req'd for indexing main LUT)
-        for(i = 0; i < HWIDTH; i += 2){
-            code_str[i] = str_buffer[i + decoded_shift];
-            code_str[i + 1] = str_buffer[i + 1 + decoded_shift];
-        }
-        code_str[i] = '\0';
-
-        //convert code string to numeric index
-        code = (short)strtol(code_str, &end_ptr, 2);
-
-        //ensure that the entire code was converted
-        if(*end_ptr != '\0'){
-            fputs("Code passed was not null-terminated. Exiting program", stderr);
-            exit(1);
-        }
-
-        //perform lookup table access, where the Huffman code is the table index
-        decoded_letter = LUT[code][0];
-        
-        //Extended LUT case: check if extended LUT needs to be accessed - if so, grab the next required encoded bits
-        if((decoded_letter ^ 38) == 0){ //compares to '&'
-
-            /* LOOP UNROLLING applied - currently allows EVEN valued MAXWIDTH and HWIDTH */
-            //get more bits, which add up to MAXLENGTH encoded bits (req'd for indexing extended LUT)
-            for(j = 0; j < (MAXWIDTH - HWIDTH); j += 2){
-                code_str[i + j] = str_buffer[i + decoded_shift + j];
-                code_str[i + j + 1] = str_buffer[i + decoded_shift + j + 1];
-            }
-            code_str[i + j] = '\0';
-            code = (short)strtol(code_str, &end_ptr, 2);
-
-            if(*end_ptr != '\0'){
-                fputs("Code passed was not null-terminated. Exiting program", stderr);
-                exit(1);
-            }
-
-            //perform lookup on extended LUT
-            decoded_letter = extended_LUT[code][0];
-            decoded_shift += extended_LUT[code][1];
-        }
-
-        //Regular case: keep the original decoded letter & apply original shift value
-        else{
-            decoded_shift += LUT[code][1];
-        }
-
-        //tack on the first byte of the UTF-8 character, then print to file 
-	    fprintf(output_fp, "%c%c", 195, decoded_letter);
-    }
-
-    fclose(output_fp);
-
-    //free allocated memory
-    free(str_buffer);
-}
-
 
 //Main function to drive Huffman decoding of n encoded string
 //Argument: LUT.txt file that contains a list of character/code pairs
@@ -263,8 +164,7 @@ int main(int argc, char *argv[]){
     }
 
     //decode the encoded file, output result to a new file
-    huffman_decode(file);
-    fclose(file);
+    //huffman_decode(file);
 
     //--- Huffman Decoding via ARM inline instruction ---
 
@@ -286,11 +186,14 @@ int main(int argc, char *argv[]){
     else{
         encoded_bit_str[file_end_ptr++] = '\0';
     }
+    fclose(file);
 
     //perform Huffman decoding via inline ARM instruction
     //"r" allows gcc to keep variables in a general-purpose register, if available
     //"=r" specifies output operand for the assembly instruction
     __asm__("huffman %1, %2, %3, %4" : "=r" (output_str) : "r" (encoded_bit_str), "r" (main_LUT), "r" (extended_LUT));
 
+    free(encoded_bit_str);
+    free(output_str);
     return 0;
 }
