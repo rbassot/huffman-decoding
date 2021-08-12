@@ -117,8 +117,10 @@ void build_lookup_tables(FILE* file){
     unsigned int prev_code_len;
     unsigned int prev_code;
 
-    /* LOOP UNROLLING applied */
-    for(i = 0; i < LUT_SIZE; i += 2){
+    /* LOOP UNROLLING applied 
+     * Optimized i = 0      */
+    
+    for(i^=i ; i < LUT_SIZE; i += 2){
 
         if(LUT[i][1] == 0){
             
