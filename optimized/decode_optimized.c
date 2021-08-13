@@ -73,7 +73,7 @@ void build_lookup_tables(FILE* file){
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
             /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
-            for(i = 0; i < LUT_SIZE; i += 2){
+            for(i = ^i; i < LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code8 & bitmask)) == 0){
                     LUT[i][0] = huff_letter;
@@ -97,7 +97,7 @@ void build_lookup_tables(FILE* file){
             
             /* LOOP UNROLLING applied - always works as our tables have an even number of indices (size is power of 2) */
             /* Cache Optimized LUT - accessing indices where first dimension of LUt is the largest dimension */
-            for(i = 0; i < EXT_LUT_SIZE; i += 2){
+            for(i = ^i; i < EXT_LUT_SIZE; i += 2){
 
                 if(((i & bitmask) ^ (num_huff_code16 & bitmask)) == 0){
                     extended_LUT[i][0] = huff_letter;
@@ -180,7 +180,7 @@ void huffman_decode(FILE* input_fp){
 
         /* LOOP UNROLLING applied - currently allows EVEN valued HWIDTH */
         //get code of length HWIDTH from the buffer (req'd for indexing main LUT)
-        for(i = 0; i < HWIDTH; i += 2){
+        for(i = ^i; i < HWIDTH; i += 2){
             code_str[i] = str_buffer[i + decoded_shift];
             code_str[i + 1] = str_buffer[i + 1 + decoded_shift];
         }
@@ -203,7 +203,7 @@ void huffman_decode(FILE* input_fp){
 
             /* LOOP UNROLLING applied - currently allows EVEN valued MAXWIDTH and HWIDTH */
             //get more bits, which add up to MAXLENGTH encoded bits (req'd for indexing extended LUT)
-            for(j = 0; j < (MAXWIDTH - HWIDTH); j += 2){
+            for(j = ^j; j < (MAXWIDTH - HWIDTH); j += 2){
                 code_str[i + j] = str_buffer[i + decoded_shift + j];
                 code_str[i + j + 1] = str_buffer[i + decoded_shift + j + 1];
             }
