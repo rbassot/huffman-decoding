@@ -12,7 +12,7 @@ This Huffman Encoding project utilizes:
 
 - The probability distribution of the French alphabet letters in the input.txt file follows a normal distribution, to provide a varying frequency of occurrence for each character, allowing the Huffman encoding algorithm to generate optimal Huffman codes for each unique symbol.
 
-- The optimized decoder, in `decode_optimized.c`, was cross-compiled into an ARM executable for execution on the UVic SENG440 arm device - an ARM920T microcontroller.
+- The optimized decoder, in `optimized/decode_optimized.c`, was cross-compiled into an ARM executable for execution on the UVic SENG440 arm device - an ARM920T microcontroller.
 
 - For full theoretical background of the project, implementation of Huffman coding, software optimizations performed, and metrics collected, see the SENG440 Final Report PDF document submitted alongside this project.
 
@@ -22,7 +22,7 @@ The optimized Huffman decoder in `optimized/decode_optimized.c` is the main file
 
 
 ## Executing the Huffman Decoder on the ARM Device
-1. Copy the three files - `decode_optimized.c`, `input.txt.lut`, & `input.txt.huf` - from a local machine onto the UVic SENG440 machine, which contains the ARM compiler. Access the SENG440 machine through SSH in another terminal, and compile the decoding file using the following command:
+1. Copy the three files - `optimized/decode_optimized.c`, `original/input.txt.lut`, & `original/input.txt.huf` - from a local machine onto the UVic SENG440 machine, which contains the ARM compiler. Access the SENG440 machine through SSH in another terminal, and compile the decoding file using the following command:
 ```
 arm-linux-gcc -static -o decode_optimized.exe decode_optimized.c
 ```
