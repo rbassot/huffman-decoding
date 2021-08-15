@@ -1,11 +1,5 @@
 # Ignore Mac system files
 .DS_store
 
-# Encoded output files
-*.huf
-
-# Generated look up tables
-*.lut
-
 # Compiled C binary files
 *.out
