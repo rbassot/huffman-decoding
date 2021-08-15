@@ -1,4 +1,4 @@
-# Huffman Encoding
+# Huffman Encoding & Decoding
 SENG440 project by Daniel Kinahan (V00887329) and Raphael Bassot (V00896541), of the University of Victoria
 
 SENG440 Team ID: 23
